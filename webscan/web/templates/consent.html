@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Before you scan — webscan-light{% endblock %}
+{% block content %}
+<div class="card pad" style="max-width:640px;margin:6vh auto 0">
+  <h2>Before you scan — please read</h2>
+  <p class="hint" style="margin-top:0">webscan-light sends real network requests to the targets you enter. Scanning systems can have consequences. Only continue if you understand and accept them.</p>
+  <ul style="font-size:13px;color:var(--ink);line-height:1.7;padding-left:18px;margin:14px 0">
+    <li><strong>Authorisation is required.</strong> Only scan systems you own or have explicit written permission to test. Unauthorised scanning is illegal in many jurisdictions.</li>
+    <li><strong>Scans are noisy and get logged.</strong> Port scans, fuzzing and active checks can trip IDS/WAF alerts and appear in the target's logs.</li>
+    <li><strong>Your IP can be rate-limited or banned.</strong> Aggressive scans (ports, URL fuzzer, network) may cause the target or your ISP/host to block your address. Lower workers and raise timeouts to be gentle.</li>
+    <li><strong>Active tools can affect the target.</strong> XSS/SQLi/redirect checks send payloads; run them only against non-production or authorised systems.</li>
+    <li><strong>Findings are indicative, not exhaustive.</strong> Version-based and heuristic checks can produce false positives/negatives — verify before acting.</li>
+  </ul>
+  <form method="post" action="/consent">
+    <input type="hidden" name="next" value="{{ next }}">
+    <button type="submit">I understand and am authorised — continue</button>
+  </form>
+</div>
+{% endblock %}

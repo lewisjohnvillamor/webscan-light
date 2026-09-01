@@ -12,6 +12,8 @@ pytest.importorskip("httpx")
 # default. Opt into private targets before importing the app.
 import os
 os.environ["WEBSCAN_ALLOW_PRIVATE"] = "1"
+os.environ["WEBSCAN_NO_CONSENT"] = "1"
+os.environ["WEBSCAN_SCAN_TTL"] = "0"  # disable reuse so each test scans fresh
 os.environ.pop("WEBSCAN_TOKEN", None)
 
 from starlette.testclient import TestClient
@@ -110,3 +112,38 @@ def test_auth_required_when_token_set(monkeypatch):
         # wrong token rejected
         assert c.get("/tool/ssl", headers={"Authorization": "Bearer nope"},
                      follow_redirects=False).status_code in (401, 303)
+
+
+def test_consent_gate_redirects_without_cookie(monkeypatch):
+    monkeypatch.setenv("WEBSCAN_NO_CONSENT", "0")
+    with TestClient(app) as c:
+        r = c.get("/", follow_redirects=False)
+        assert r.status_code == 303 and r.headers["location"].startswith("/consent")
+        # posting consent sets the cookie and lets pages load
+        c.post("/consent", data={"next": "/"}, follow_redirects=False)
+        assert c.get("/", follow_redirects=False).status_code == 200
+    monkeypatch.setenv("WEBSCAN_NO_CONSENT", "1")
+
+
+def test_recent_scan_is_reused(client, server, monkeypatch):
+    monkeypatch.setenv("WEBSCAN_SCAN_TTL", "600")
+    from urllib.parse import urlparse
+    port = urlparse(server).port
+    r1 = client.post("/tool/ports", data={"target": "127.0.0.1", "ports": str(port), "timeout": 3},
+                     follow_redirects=False)
+    jid = r1.headers["location"].rsplit("/", 1)[-1]
+    assert _wait(client, jid) == "finished"
+    # a second identical scan should redirect to the stored result, not a new job
+    r2 = client.post("/tool/ports", data={"target": "127.0.0.1", "ports": str(port), "timeout": 3},
+                     follow_redirects=False)
+    assert r2.status_code == 303 and "/stored/" in r2.headers["location"]
+    monkeypatch.setenv("WEBSCAN_SCAN_TTL", "0")
+
+
+def test_one_click_monitor_creates_asm_schedule(client):
+    from webscan.core import database
+    before = len(database.list_schedules())
+    client.post("/schedules/monitor", data={"target": "example.com"}, follow_redirects=False)
+    after = database.list_schedules()
+    assert len(after) == before + 1
+    assert after[0]["tool_id"] == "asm"

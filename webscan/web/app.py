@@ -26,8 +26,10 @@ from starlette.templating import Jinja2Templates
 from webscan import __version__
 from webscan.core.engine import ScanOptions
 from webscan.core.http import normalize_target
+import os as _os
+
 from webscan.core.registry import load_checks
-from webscan.core import history, notify, scope
+from webscan.core import database, history, notify, scope
 from webscan.core import scheduler as scheduler_mod
 from webscan.report import generic
 from webscan.report import html as html_report
@@ -35,6 +37,7 @@ from webscan.report import jsonout, pdf, sarif
 from webscan.tools.base import ToolOptions, all_tools, get_tool, load_tools
 
 from . import auth
+from .consent import ConsentMiddleware
 from .logger_store import LoggedRequest, LoggerStore
 from .store import JobStore
 
@@ -131,6 +134,9 @@ async def start(request: Request):
         wordlist=form.get("wordlist") or "", max_items=int(num("max_items", 0)),
         active=True, authorized=_truthy(form.get("authorized")),
         extra={"time_based": "1"} if _truthy(form.get("time_based")) else {})
+    cached = _reuse(request, tool_id, target, form)
+    if cached:
+        return cached
     job = jobs.start_tool(tool_id, target, options)
     return RedirectResponse(url=f"/job/{job.id}", status_code=303)
 
@@ -144,6 +150,29 @@ async def job_page(request: Request):
     return templates.TemplateResponse(request, "result.html", {
         "version": __version__, "job": job, "pdf_available": pdf.available(),
         "is_website": job.kind == "website"})
+
+
+class _StoredJob:
+    """A job-like view over a persisted scan, for the result page after reuse/restart."""
+    def __init__(self, row: dict):
+        import json as _json
+        self.id = row["id"]
+        self.tool_id = row["tool_id"]
+        self.tool_name = row["tool_name"]
+        self.target = row["target"]
+        self.kind = row["kind"]
+        self.state = "finished"
+        counts = _json.loads(row.get("rating_counts") or "{}")
+        self.summary = {"overall_risk": row["overall_risk"], "rating_counts": counts,
+                        "findings": row["findings_count"], "duration_seconds": row["duration"]}
+
+
+async def stored_result(request: Request):
+    row = _stored_or_404(request.path_params["scan_id"])
+    return templates.TemplateResponse(request, "result.html", {
+        "version": __version__, "job": _StoredJob(row), "pdf_available": pdf.available(),
+        "is_website": row["kind"] == "website",
+        "cached": request.query_params.get("cached") == "1"})
 
 
 async def job_status(request: Request):
@@ -243,6 +272,24 @@ def _finished_or_404(job_id: str):
     return job
 
 
+def _scan_ttl() -> int:
+    try:
+        return int(_os.environ.get("WEBSCAN_SCAN_TTL", "600"))
+    except ValueError:
+        return 600
+
+
+def _reuse(request: Request, tool_id: str, target: str, form):
+    """Serve a recent identical scan instead of re-running, unless forced."""
+    ttl = _scan_ttl()
+    if ttl <= 0 or _truthy(form.get("force")):
+        return None
+    row = database.recent_scan(tool_id, target, ttl)
+    if row:
+        return RedirectResponse(url=f"/stored/{row['id']}?cached=1", status_code=303)
+    return None
+
+
 def _tool_error(request: Request, tool_id: str, message: str):
     if tool_id == "website":
         card = WEBSITE_CARD
@@ -282,6 +329,18 @@ async def schedule_add(request: Request):
         raise HTTPException(status_code=400, detail=f"blocked: {reason}")
     scheduler_mod.add_schedule(tool_id, target, every,
                                {"authorized": _truthy(form.get("authorized"))})
+    return RedirectResponse(url="/schedules", status_code=303)
+
+
+async def schedule_monitor(request: Request):
+    form = await request.form()
+    target = (form.get("target") or "").strip()
+    if not target:
+        raise HTTPException(status_code=400, detail="a domain is required")
+    allowed, reason = scope.check(target)
+    if not allowed:
+        raise HTTPException(status_code=400, detail=f"blocked: {reason}")
+    scheduler_mod.add_schedule("asm", target, 86400, {"authorized": True})
     return RedirectResponse(url="/schedules", status_code=303)
 
 
@@ -360,6 +419,21 @@ async def stored_compliance(request: Request):
     return HTMLResponse(compliance.render(row), headers={"Content-Security-Policy": REPORT_CSP})
 
 
+CONSENT_COOKIE = "webscan_consent"
+
+
+async def consent(request: Request):
+    if request.method == "POST":
+        nxt = (await request.form()).get("next") or "/"
+        response = RedirectResponse(url=nxt if nxt.startswith("/") else "/", status_code=303)
+        response.set_cookie(CONSENT_COOKIE, "1", max_age=60 * 60 * 24 * 365,
+                            httponly=True, samesite="lax", path="/")
+        return response
+    return templates.TemplateResponse(request, "consent.html",
+                                      {"version": __version__,
+                                       "next": request.query_params.get("next", "/")})
+
+
 async def login(request: Request):
     token = auth.configured_token()
     if not token:
@@ -384,9 +458,11 @@ routes = [
     Route("/", index),
     Route("/health", health),
     Route("/login", login, methods=["GET", "POST"]),
+    Route("/consent", consent, methods=["GET", "POST"]),
     Route("/history", history_page),
     Route("/schedules", schedules_page),
     Route("/schedules", schedule_add, methods=["POST"]),
+    Route("/schedules/monitor", schedule_monitor, methods=["POST"]),
     Route("/schedules/{schedule_id}/delete", schedule_delete, methods=["POST"]),
     Route("/schedules/{schedule_id}/run", schedule_run, methods=["POST"]),
     Route("/report/{scan_id}.json", stored_json),
@@ -398,6 +474,7 @@ routes = [
     Route("/tool/{tool_id}", tool_form),
     Route("/tool/{tool_id}", start, methods=["POST"]),
     Route("/job/{job_id}", job_page),
+    Route("/stored/{scan_id}", stored_result),
     Route("/api/job/{job_id}", job_status),
     Route("/job/{job_id}/report.html", report_html),
     Route("/job/{job_id}/report.json", report_json),
@@ -427,4 +504,5 @@ async def _lifespan(app):
         _scheduler.stop()
 
 
-app = Starlette(routes=routes, middleware=[Middleware(auth.AuthMiddleware)], lifespan=_lifespan)
+app = Starlette(routes=routes, middleware=[Middleware(auth.AuthMiddleware), Middleware(ConsentMiddleware)],
+                lifespan=_lifespan)

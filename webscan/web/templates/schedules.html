@@ -1,8 +1,20 @@
 {% extends "base.html" %}
 {% block title %}Scheduled scans — webscan-light{% endblock %}
 {% block content %}
+<div class="card pad" style="margin-bottom:16px">
+  <h2>Monitor a domain</h2>
+  <p class="hint" style="margin-top:0">One click sets up a daily Attack Surface Monitor and alerts you when your exposure changes (new subdomain, new open port, new finding).</p>
+  <form method="post" action="/schedules/monitor" style="display:flex;gap:10px;flex-wrap:wrap;align-items:end;margin-top:12px">
+    <div class="field" style="flex:1;min-width:240px;margin:0">
+      <label for="mon">Domain</label>
+      <input type="text" id="mon" name="target" placeholder="example.com" required>
+    </div>
+    <button type="submit">Monitor this domain →</button>
+  </form>
+</div>
+
 <div class="card pad" style="margin-bottom:20px">
-  <h2>Scheduled scans</h2>
+  <h2>Custom schedule</h2>
   <p class="hint" style="margin-top:0">Run a scan on a repeating interval. You are alerted only when a scan surfaces a <strong>new</strong> finding compared to its previous run.</p>
   {% if channels %}
   <div class="notice" style="margin-top:12px">Alerts will be sent via: <strong>{{ channels|join(', ') }}</strong>.</div>

@@ -95,6 +95,19 @@ def list_scans(limit: int = 100, target: str | None = None, tool_id: str | None 
         return [dict(row) for row in conn.execute(query, params)]
 
 
+def recent_scan(tool_id: str, target: str, within_seconds: int) -> dict | None:
+    """Most recent finished scan of this (tool, target) newer than the cutoff."""
+    init_db()
+    from datetime import datetime, timedelta, timezone
+    cutoff = (datetime.now(timezone.utc) - timedelta(seconds=within_seconds)).isoformat()
+    with connect() as conn:
+        row = conn.execute(
+            "SELECT id, created_at FROM scans WHERE tool_id=? AND target=? AND status='Finished' "
+            "AND created_at >= ? ORDER BY created_at DESC LIMIT 1",
+            (tool_id, target, cutoff)).fetchone()
+    return dict(row) if row else None
+
+
 def get_scan(scan_id: str) -> dict | None:
     init_db()
     with connect() as conn:
