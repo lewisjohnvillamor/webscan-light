@@ -6,7 +6,7 @@
 {% set is_active = card.active %}
 <form class="card pad" method="post" action="/tool/{{ card.id }}">
   <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
-    <div class="ico" style="width:44px;height:44px;border-radius:12px;display:grid;place-items:center;font-size:22px;background:var(--accent-soft)">{{ card.glyph }}</div>
+    <div class="ico" style="width:42px;height:42px;font:600 13px/1 var(--mono);letter-spacing:.04em;color:var(--muted);background:var(--panel);border:1px solid var(--line);border-radius:10px;display:grid;place-items:center">{{ card.code }}</div>
     <div>
       <h2 style="margin:0">{{ card.name }}</h2>
       <div class="hint" style="margin:2px 0 0">{{ card.description }}</div>

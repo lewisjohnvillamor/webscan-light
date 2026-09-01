@@ -10,13 +10,11 @@
 <div class="sheet">
 
   <header class="masthead">
-    <div class="glyph">{{ glyph }}</div>
-    <div>
-      <h1>{{ report.tool_name }}</h1>
-      <div class="sub">Target: <a href="{{ report.target }}">{{ report.target }}</a></div>
-    </div>
+    <span class="code">{{ glyph }}</span>
+    <h1>{{ report.tool_name }}</h1>
     <span class="spacer"></span>
     <span class="scan-type-pill">{{ report.status }}</span>
+    <div class="sub">Target: <a href="{{ report.target }}">{{ report.target }}</a></div>
   </header>
 
   {% set risk = report.overall_risk.label %}
@@ -51,7 +49,7 @@
   <h2 class="section">Findings</h2>
   <p class="section-hint">{{ charts.total_findings }} findings, highest severity first.</p>
   {% for finding in report.sorted_findings %}
-  <article class="finding" style="--sev-color:var({{ severity_vars[finding.severity.label] }})">
+  <article class="finding" style="--sev-color:var({{ severity_vars[finding.severity.label] }});--sev-bg:var({{ severity_vars[finding.severity.label] }}-bg)">
     <div class="finding-head">
       <span class="sev-chip">{{ finding.severity.label }}</span>
       <h3 class="finding-title">{{ finding.title }}</h3>
@@ -65,7 +63,7 @@
           <thead><tr>{% for column in finding.table.columns %}<th>{{ column }}</th>{% endfor %}</tr></thead>
           <tbody>
             {% for row in finding.table.rows %}
-            <tr>{% for cell in row %}<td{{ ' class="num"' if finding.table.columns[loop.index0] in numeric_columns else '' }}>{{ cell|linkify }}</td>{% endfor %}</tr>
+            <tr>{% for cell in row %}<td{% if finding.table.columns[loop.index0] in numeric_columns %} class="num"{% endif %}>{{ cell|linkify }}</td>{% endfor %}</tr>
             {% endfor %}
           </tbody>
         </table>
@@ -104,7 +102,7 @@
         <thead><tr>{% for column in section.table.columns %}<th>{{ column }}</th>{% endfor %}</tr></thead>
         <tbody>
           {% for row in section.table.rows %}
-          <tr>{% for cell in row %}<td{{ ' class="num"' if section.table.columns[loop.index0] in numeric_columns else '' }}>{{ cell|linkify }}</td>{% endfor %}</tr>
+          <tr>{% for cell in row %}<td{% if section.table.columns[loop.index0] in numeric_columns %} class="num"{% endif %}>{{ cell|linkify }}</td>{% endfor %}</tr>
           {% endfor %}
         </tbody>
       </table>

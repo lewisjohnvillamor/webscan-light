@@ -14,10 +14,11 @@ from webscan.core.toolreport import ToolReport
 from . import charts
 from .html import NUMERIC_COLUMNS, SEVERITY_VARS, _environment
 
+# Short monospace codes used as the report/masthead mark (no emoji).
 TOOL_GLYPHS = {
-    "website": "🛡", "ssl": "🔒", "ports": "📡", "network": "🖧", "subdomains": "🌐",
-    "vhosts": "🎭", "recon": "🔎", "api": "🧩", "urlfuzzer": "🗂", "dorks": "🔦",
-    "takeover": "🪝", "xss": "⚡", "sqli": "💉", "sniper": "🎯", "logger": "📥",
+    "website": "WEB", "ssl": "TLS", "ports": "PRT", "network": "NET", "subdomains": "SUB",
+    "vhosts": "VHT", "recon": "RCN", "api": "API", "urlfuzzer": "FUZ", "dorks": "DRK",
+    "takeover": "TKO", "xss": "XSS", "sqli": "SQL", "sniper": "SNP", "logger": "LOG",
 }
 
 
@@ -47,7 +48,7 @@ def render(report: ToolReport, include_exchanges: bool = False) -> str:
         generated_at=datetime.now(timezone.utc),
         numeric_columns=NUMERIC_COLUMNS,
         severity_vars=SEVERITY_VARS,
-        glyph=TOOL_GLYPHS.get(report.tool, "🛡"),
+        glyph=TOOL_GLYPHS.get(report.tool, "WS"),
         include_exchanges=include_exchanges,
         charts=_build_charts(report),
     )

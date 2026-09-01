@@ -42,7 +42,7 @@ REPORT_CSP = "default-src 'none'; style-src 'unsafe-inline'; img-src data:; base
 # The website scanner presented alongside the tool cards.
 WEBSITE_CARD = {
     "id": "website", "name": "Website Scanner", "category": "Vulnerability",
-    "glyph": "🛡", "active": False,
+    "code": "WEB", "active": False,
     "description": "Full 40-test light scan: headers, tech, CVEs, cookies, exposure and more.",
     "target_hint": "URL or hostname",
 }
@@ -53,7 +53,7 @@ def _tool_cards() -> list[dict]:
     for spec in all_tools():
         cards.append({
             "id": spec.id, "name": spec.name, "category": spec.category,
-            "glyph": generic.TOOL_GLYPHS.get(spec.id, "🛡"), "active": spec.active,
+            "code": generic.TOOL_GLYPHS.get(spec.id, "WS"), "active": spec.active,
             "description": spec.description, "target_hint": spec.target_hint,
         })
     order = {"Recon": 0, "Vulnerability": 1, "Exploit": 2}

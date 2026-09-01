@@ -16,8 +16,8 @@ def donut(
     *,
     color_var: str,
     label: str,
-    size: int = 132,
-    stroke: int = 11,
+    size: int = 118,
+    stroke: int = 8,
 ) -> str:
     """A single ring gauge with the value centred, matching the reference UI.
 

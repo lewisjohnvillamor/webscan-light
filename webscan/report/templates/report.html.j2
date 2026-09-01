@@ -10,13 +10,11 @@
 <div class="sheet">
 
   <header class="masthead">
-    <div class="glyph">🛡</div>
-    <div>
-      <h1>Website Vulnerability Scanner Report</h1>
-      <div class="sub">Target: <a href="{{ result.target }}">{{ result.target }}</a></div>
-    </div>
+    <span class="code">webscan</span>
+    <h1>Website Vulnerability Scanner Report</h1>
     <span class="spacer"></span>
     <span class="scan-type-pill">{{ result.scan_type }} scan</span>
+    <div class="sub">Target: <a href="{{ result.target }}">{{ result.target }}</a></div>
   </header>
 
   {% if scanner_note %}<div class="notice">{{ scanner_note }}</div>{% endif %}
@@ -80,7 +78,7 @@
   {% endif %}
 
   {% for finding in result.sorted_findings %}
-  <article class="finding" style="--sev-color:var({{ severity_vars[finding.severity.label] }})">
+  <article class="finding" style="--sev-color:var({{ severity_vars[finding.severity.label] }});--sev-bg:var({{ severity_vars[finding.severity.label] }}-bg)">
     <div class="finding-head">
       <span class="sev-chip">{{ finding.severity.label }}</span>
       <h3 class="finding-title">{{ finding.title }}</h3>
@@ -94,7 +92,7 @@
           <thead><tr>{% for column in finding.table.columns %}<th>{{ column }}</th>{% endfor %}</tr></thead>
           <tbody>
             {% for row in finding.table.rows %}
-            <tr>{% for cell in row %}<td{{ ' class="num"' if finding.table.columns[loop.index0] in numeric_columns else '' }}>{{ cell|linkify }}</td>{% endfor %}</tr>
+            <tr>{% for cell in row %}<td{% if finding.table.columns[loop.index0] in numeric_columns %} class="num"{% endif %}>{{ cell|linkify }}</td>{% endfor %}</tr>
             {% endfor %}
           </tbody>
         </table>

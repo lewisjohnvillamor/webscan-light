@@ -13,7 +13,7 @@
   {% for card in group %}
   <a class="card toolcard" href="/tool/{{ card.id }}">
     {% if card.active %}<span class="flag">ACTIVE</span>{% endif %}
-    <div class="ico">{{ card.glyph }}</div>
+    <div class="ico">{{ card.code }}</div>
     <div class="nm">{{ card.name }}</div>
     <div class="ds">{{ card.description }}</div>
   </a>
