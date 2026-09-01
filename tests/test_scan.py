@@ -138,11 +138,11 @@ def test_unreachable_target_fails_cleanly():
 
 def test_html_report_contains_the_report_sections(result):
     markup = html_report.render(result)
-    for expected in ("Website Vulnerability Scanner Report", "Summary", "Findings",
-                     "Scan coverage information", "Scan parameters", "Scan stats",
+    for expected in ("Website Vulnerability Scanner Report", "Findings",
+                     "Scan coverage", "Scan parameters", "Scan stats",
                      "Overall risk level"):
         assert expected in markup
-    assert f"List of tests performed ({len(result.tests_performed)})" in markup
+    assert f"{len(result.tests_performed)} tests performed" in markup
 
 
 def test_html_report_escapes_untrusted_content(result):
