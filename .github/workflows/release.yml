@@ -2,7 +2,8 @@ name: Release
 
 on:
   push:
-    tags: ["v*.*.*"]
+    branches: [main]          # publishes :latest (+ :1.0.0 seed) on merges to main
+    tags: ["v*.*.*"]          # publishes :X.Y.Z / :X.Y / :latest on version tags
   workflow_dispatch:
 
 jobs:
@@ -28,7 +29,8 @@ jobs:
           tags: |
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
-            type=raw,value=latest
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value=1.0.0,enable=${{ github.ref == 'refs/heads/main' }}
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
