@@ -19,6 +19,7 @@ from starlette.responses import (
     RedirectResponse,
     Response,
 )
+from starlette.middleware import Middleware
 from starlette.routing import Route
 from starlette.templating import Jinja2Templates
 
@@ -26,11 +27,13 @@ from webscan import __version__
 from webscan.core.engine import ScanOptions
 from webscan.core.http import normalize_target
 from webscan.core.registry import load_checks
+from webscan.core import scope
 from webscan.report import generic
 from webscan.report import html as html_report
 from webscan.report import jsonout, pdf, sarif
 from webscan.tools.base import ToolOptions, all_tools, get_tool, load_tools
 
+from . import auth
 from .logger_store import LoggedRequest, LoggerStore
 from .store import JobStore
 
@@ -93,7 +96,14 @@ async def start(request: Request):
     form = await request.form()
     target = (form.get("target") or "").strip()
     if not target:
-        raise HTTPException(status_code=400, detail="a target is required")
+        return _tool_error(request, tool_id, "A target is required.")
+
+    allowed, reason = scope.check(target)
+    if not allowed:
+        return _tool_error(
+            request, tool_id,
+            f"Blocked: {reason}. This target is out of scope for the web UI. "
+            "Set WEBSCAN_ALLOW_PRIVATE=1 to permit private/internal targets.")
 
     def num(name, default):
         try:
@@ -232,11 +242,40 @@ def _finished_or_404(job_id: str):
     return job
 
 
+def _tool_error(request: Request, tool_id: str, message: str):
+    if tool_id == "website":
+        card = WEBSITE_CARD
+    else:
+        card = next((c for c in _tool_cards() if c["id"] == tool_id), WEBSITE_CARD)
+    return templates.TemplateResponse(request, "tool.html",
+                                      {"version": __version__, "card": card, "error": message},
+                                      status_code=400)
+
+
+async def login(request: Request):
+    token = auth.configured_token()
+    if not token:
+        return RedirectResponse(url="/", status_code=303)
+    error = ""
+    if request.method == "POST":
+        form = await request.form()
+        supplied = (form.get("token") or "").strip()
+        import hmac as _hmac
+        if supplied and _hmac.compare_digest(supplied, token):
+            response = RedirectResponse(url="/", status_code=303)
+            auth.set_auth_cookie(response, token, secure=request.url.scheme == "https")
+            return response
+        error = "Incorrect token."
+    return templates.TemplateResponse(request, "login.html",
+                                      {"version": __version__, "error": error})
+
+
 _CAPTURE_METHODS = ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD"]
 
 routes = [
     Route("/", index),
     Route("/health", health),
+    Route("/login", login, methods=["GET", "POST"]),
     Route("/tool/{tool_id}", tool_form),
     Route("/tool/{tool_id}", start, methods=["POST"]),
     Route("/job/{job_id}", job_page),
@@ -253,4 +292,4 @@ routes = [
     Route("/logger/{token}/{subpath:path}", logger_capture, methods=_CAPTURE_METHODS),
 ]
 
-app = Starlette(routes=routes)
+app = Starlette(routes=routes, middleware=[Middleware(auth.AuthMiddleware)])

@@ -307,6 +307,15 @@ def cmd_serve(args: argparse.Namespace) -> int:
             print("note: --reload needs watchfiles (pip install watchfiles); starting without it",
                   file=sys.stderr)
             reload = False
+    import os
+    exposed = args.host not in ("127.0.0.1", "localhost", "::1")
+    if exposed and not os.environ.get("WEBSCAN_TOKEN", "").strip():
+        print("WARNING: binding to a non-loopback address without WEBSCAN_TOKEN set.\n"
+              "         Anyone who can reach this port can drive scans from your server.\n"
+              "         Set WEBSCAN_TOKEN=<secret> to require authentication.", file=sys.stderr)
+    if exposed and os.environ.get("WEBSCAN_ALLOW_PRIVATE", "").lower() in ("1", "true", "yes", "on"):
+        print("WARNING: WEBSCAN_ALLOW_PRIVATE is on and the server is exposed — targets may "
+              "include your internal network.", file=sys.stderr)
     print(f"webscan-light UI -> http://{args.host}:{args.port}")
     uvicorn.run("webscan.web.app:app", host=args.host, port=args.port,
                 reload=reload, log_level="info")

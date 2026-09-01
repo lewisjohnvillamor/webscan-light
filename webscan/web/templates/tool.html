@@ -13,6 +13,7 @@
     </div>
   </div>
 
+  {% if error %}<div class="notice warn">{{ error }}</div>{% endif %}
   {% if is_active %}
   <div class="notice warn">This tool sends active requests to the target. Only run it against systems you own or have explicit written permission to test.</div>
   {% endif %}

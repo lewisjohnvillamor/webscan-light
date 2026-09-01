@@ -83,3 +83,12 @@ def test_generic_report_escapes_section_tables():
     report.finish()
     markup = generic.render(report)
     assert "<img onerror=x>" not in markup
+
+
+def test_scope_guard():
+    from webscan.core.scope import check
+    assert check("example.com", allow_private=False)[0] is True
+    assert check("http://169.254.169.254/", allow_private=False)[0] is False
+    assert check("10.0.0.5", allow_private=False)[0] is False
+    assert check("127.0.0.1", allow_private=False)[0] is False
+    assert check("10.0.0.5", allow_private=True)[0] is True

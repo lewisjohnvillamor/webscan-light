@@ -7,6 +7,13 @@ import time
 import pytest
 
 pytest.importorskip("httpx")
+
+# The test fixture server runs on loopback, which the SSRF scope guard blocks by
+# default. Opt into private targets before importing the app.
+import os
+os.environ["WEBSCAN_ALLOW_PRIVATE"] = "1"
+os.environ.pop("WEBSCAN_TOKEN", None)
+
 from starlette.testclient import TestClient
 
 from webscan.web.app import app
@@ -80,3 +87,26 @@ def test_request_logger_captures(client):
     data = client.get(f"/api/logger/{token}").json()
     assert len(data["requests"]) == 2
     assert client.get("/api/logger/unknown-token").status_code == 404
+
+
+def test_scope_guard_blocks_metadata_when_private_disallowed(client, monkeypatch):
+    monkeypatch.setenv("WEBSCAN_ALLOW_PRIVATE", "0")
+    resp = client.post("/tool/ssl", data={"target": "http://169.254.169.254/"},
+                       follow_redirects=False)
+    assert resp.status_code == 400
+    assert "out of scope" in resp.text.lower()
+    monkeypatch.setenv("WEBSCAN_ALLOW_PRIVATE", "1")
+
+
+def test_auth_required_when_token_set(monkeypatch):
+    monkeypatch.setenv("WEBSCAN_TOKEN", "s3cret")
+    with TestClient(app) as c:
+        # API caller without token -> 401
+        assert c.get("/api/job/x").status_code == 401
+        # health and logger capture stay public
+        assert c.get("/health").status_code == 200
+        # bearer token works
+        assert c.get("/tool/ssl", headers={"Authorization": "Bearer s3cret"}).status_code == 200
+        # wrong token rejected
+        assert c.get("/tool/ssl", headers={"Authorization": "Bearer nope"},
+                     follow_redirects=False).status_code in (401, 303)
