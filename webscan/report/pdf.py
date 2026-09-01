@@ -58,7 +58,8 @@ def available() -> bool:
     return find_chrome() is not None
 
 
-def write(result: ScanResult, path: str | Path, include_exchanges: bool = False) -> Path:
+def html_to_pdf(markup: str, path: str | Path) -> Path:
+    """Render an HTML string to PDF via headless Chromium."""
     chrome = find_chrome()
     if not chrome:
         raise PdfUnavailable(
@@ -70,7 +71,6 @@ def write(result: ScanResult, path: str | Path, include_exchanges: bool = False)
 
     output = Path(path).resolve()
     output.parent.mkdir(parents=True, exist_ok=True)
-    markup = html_report.render(result, include_exchanges=include_exchanges)
 
     with tempfile.TemporaryDirectory() as tmpdir:
         source = Path(tmpdir) / "report.html"
@@ -95,3 +95,8 @@ def write(result: ScanResult, path: str | Path, include_exchanges: bool = False)
             f"{(process.stderr or '').strip()[:600]}"
         )
     return output
+
+
+def write(result: ScanResult, path: str | Path, include_exchanges: bool = False) -> Path:
+    """Render a website ScanResult to PDF."""
+    return html_to_pdf(html_report.render(result, include_exchanges=include_exchanges), path)
