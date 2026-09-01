@@ -28,6 +28,19 @@ Tests performed      40
 └──────┴──────────────────────────────────────────────────┴─────────────┘
 ```
 
+## Demo
+
+![webscan-light demo](docs/img/demo.gif)
+
+| Tool launcher | Report (light) | Report (dark) |
+| --- | --- | --- |
+| ![launcher](docs/img/launcher.png) | ![report](docs/img/report.png) | ![report dark](docs/img/report-dark.png) |
+
+| Scheduled monitoring | Scan-safety gate |
+| --- | --- |
+| ![schedules](docs/img/schedules.png) | ![consent](docs/img/consent.png) |
+
+
 ## What it does
 
 **40 tests**, run against every scan:
@@ -177,10 +190,26 @@ it as PDF/JSON/SARIF. The UI binds to **loopback only** by default — see
 
 ## Docker
 
+Pull the published image (built and pushed to GHCR by the release workflow on
+every `v*` tag):
+
+```bash
+docker run -d -p 127.0.0.1:8000:8000 \
+  -e WEBSCAN_TOKEN=$(openssl rand -hex 16) \
+  -v webscan-data:/data -e WEBSCAN_DATA_DIR=/data \
+  ghcr.io/lewisjohnvillamor/webscan-light:latest
+```
+
+Or build locally with compose:
+
 ```bash
 docker compose up -d          # UI on http://127.0.0.1:8000
 docker compose run --rm webscan scan example.com -f json
 ```
+
+The image includes a headless Chromium for PDF export and a `/health`
+HEALTHCHECK. It binds to loopback in the compose file — see
+[Self-hosting](#self-hosting-security-history-and-scheduling) before exposing it.
 
 ## CI usage
 
@@ -288,6 +317,8 @@ Scans still run and are stored even with no alert channel configured.
 | `WEBSCAN_DATA_DIR` / `WEBSCAN_DB` | Where scan history is stored |
 | `WEBSCAN_WEBHOOK_URL`, `WEBSCAN_SMTP_*` | New-finding alert channels |
 | `WEBSCAN_NO_SCHEDULER` | Set to 1 to disable the in-server scheduler |
+| `WEBSCAN_SCAN_TTL` | Seconds to reuse a recent identical scan (default 600; 0 = off) |
+| `WEBSCAN_NO_CONSENT` | Set to 1 to skip the web scan-safety consent gate |
 
 PDF export drives a headless Chromium. If none is found, `-f pdf` writes the
 HTML report instead and tells you — every other format works without it.
@@ -341,6 +372,48 @@ pytest                        # runs against a local fixture server, no network
 Scan only systems you own or have written permission to test. Unauthorised
 scanning is illegal in many jurisdictions. The authors accept no liability for
 misuse.
+
+## Caching & load
+
+webscan-light avoids hammering targets and public APIs:
+
+- **Scan reuse** — the web UI serves a recent identical scan (same tool + target
+  within `WEBSCAN_SCAN_TTL`, default 600s) instead of re-running; tick *Force
+  fresh scan* to override. Set `WEBSCAN_SCAN_TTL=0` to disable.
+- **Vulnerability data** — NVD/EPSS/CISA-KEV and OSV results are cached on disk
+  for 24h; `--offline` uses only the cache. DNS lookups are memoised per run.
+- **History** — every finished scan is stored in SQLite and re-openable without
+  re-scanning.
+
+## Limitations & accuracy
+
+- **Light, mostly passive scanning.** Version- and heuristic-based checks can
+  produce **false positives and false negatives** — always verify before acting.
+  Version-based CVE findings are marked *Unconfirmed* and capped at High.
+- **Bucket/typosquat name guessing** is heuristic; a match is not proof of
+  ownership or malice.
+- **Zone-transfer / AXFR and port checks** are best-effort TCP probes and can be
+  affected by firewalls, filtering and rate limits.
+- **PDF export** needs a headless Chromium (falls back to HTML if absent).
+- This is **not** a replacement for a deep/authenticated scan or a manual
+  penetration test.
+
+## Responsible use & precautions
+
+Read this before scanning anything you do not own:
+
+- **Authorisation is mandatory.** Only scan systems you own or have explicit
+  written permission to test. Unauthorised scanning is illegal in many places.
+- **Scans are noisy and logged.** Port scans, fuzzing and active checks trip
+  IDS/WAF alerts and show up in the target's logs.
+- **Your IP can be rate-limited or banned.** Aggressive scans (`ports`,
+  `network`, `urlfuzzer`) may get your address blocked by the target, its CDN,
+  or your own ISP/host. Lower `--workers` and raise `--timeout` to be gentle.
+- **Active tools send payloads.** `xss`, `sqli`, `webmisc` and `sniper` are
+  gated behind an explicit authorisation flag/checkbox for a reason — run them
+  only against non-production or authorised systems.
+- The web UI shows a one-time **consent gate** covering the above
+  (`/consent`; bypass with `WEBSCAN_NO_CONSENT=1` for headless/API use).
 
 ## License
 

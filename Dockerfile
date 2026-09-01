@@ -7,6 +7,7 @@ RUN apt-get update \
 
 ENV WEBSCAN_CHROME=/usr/bin/chromium \
     WEBSCAN_CACHE_DIR=/cache \
+    WEBSCAN_DATA_DIR=/data \
     PYTHONUNBUFFERED=1
 
 WORKDIR /app
@@ -15,7 +16,7 @@ COPY webscan ./webscan
 RUN pip install --no-cache-dir ".[web,cli]"
 
 RUN useradd --create-home --uid 10001 scanner \
- && mkdir -p /cache && chown scanner /cache
+ && mkdir -p /cache /data && chown scanner /cache /data
 USER scanner
 
 EXPOSE 8000
