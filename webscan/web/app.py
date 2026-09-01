@@ -53,7 +53,7 @@ REPORT_CSP = "default-src 'none'; style-src 'unsafe-inline'; img-src data:; base
 
 WEBSITE_CARD = {
     "id": "website", "name": "Website Scanner", "category": "Vulnerability",
-    "code": "WEB", "active": False,
+    "code": "WEB", "active": False, "local_fs": False,
     "description": "Full 40-test light scan: headers, tech, CVEs, cookies, exposure and more.",
     "target_hint": "URL or hostname",
 }
@@ -65,6 +65,7 @@ def _tool_cards() -> list[dict]:
         cards.append({
             "id": spec.id, "name": spec.name, "category": spec.category,
             "code": generic.TOOL_GLYPHS.get(spec.id, "WS"), "active": spec.active,
+            "local_fs": spec.local_fs,
             "description": spec.description, "target_hint": spec.target_hint,
         })
     order = {"Recon": 0, "Vulnerability": 1, "Exploit": 2}
@@ -74,6 +75,16 @@ def _tool_cards() -> list[dict]:
 
 def _truthy(value: str | None) -> bool:
     return str(value).lower() in ("true", "1", "on", "yes")
+
+
+def _safe_next(value: str | None) -> str:
+    """Only allow same-site absolute paths (blocks //evil.com and scheme://)."""
+    value = (value or "/").strip()
+    # Normalise backslashes (browsers treat \ as /) before validating.
+    normalised = value.replace("\\", "/")
+    if not normalised.startswith("/") or normalised.startswith("//") or "://" in normalised:
+        return "/"
+    return value
 
 
 async def index(request: Request):
@@ -126,8 +137,14 @@ async def start(request: Request):
             delay=num("delay", 0.0)))
         return RedirectResponse(url=f"/job/{job.id}", status_code=303)
 
-    if not get_tool(tool_id):
+    spec = get_tool(tool_id)
+    if not spec:
         raise HTTPException(status_code=404, detail="unknown tool")
+    if spec.local_fs:
+        return _tool_error(request, tool_id,
+                           "This tool reads the server's local filesystem and is disabled in the "
+                           "web UI for safety. Run it from the CLI instead, e.g. "
+                           f"`webscan run {tool_id} /path/to/project`.")
     options = ToolOptions(
         timeout=num("timeout", 10.0), offline=_truthy(form.get("offline")),
         verify_tls=not _truthy(form.get("insecure")), ports=form.get("ports") or "",
@@ -425,8 +442,8 @@ CONSENT_COOKIE = "webscan_consent"
 
 async def consent(request: Request):
     if request.method == "POST":
-        nxt = (await request.form()).get("next") or "/"
-        response = RedirectResponse(url=nxt if nxt.startswith("/") else "/", status_code=303)
+        nxt = _safe_next((await request.form()).get("next"))
+        response = RedirectResponse(url=nxt, status_code=303)
         response.set_cookie(CONSENT_COOKIE, "1", max_age=60 * 60 * 24 * 365,
                             httponly=True, samesite="lax", path="/")
         return response

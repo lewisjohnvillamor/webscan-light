@@ -147,3 +147,24 @@ def test_one_click_monitor_creates_asm_schedule(client):
     after = database.list_schedules()
     assert len(after) == before + 1
     assert after[0]["tool_id"] == "asm"
+
+
+def test_filesystem_tools_blocked_in_web(client):
+    for tool_id in ("secrets", "deps"):
+        r = client.post(f"/tool/{tool_id}", data={"target": "/etc"}, follow_redirects=False)
+        assert r.status_code == 400
+        assert "disabled in the web UI" in r.text or "local filesystem" in r.text
+
+
+def test_consent_next_blocks_open_redirect(monkeypatch):
+    monkeypatch.setenv("WEBSCAN_NO_CONSENT", "0")
+    with TestClient(app) as c:
+        # protocol-relative and absolute externals must not be honoured
+        for bad in ["//evil.com", "https://evil.com", "/\\evil.com"]:
+            r = c.post("/consent", data={"next": bad}, follow_redirects=False)
+            assert r.headers["location"] == "/" or r.headers["location"].startswith("/")
+            assert "evil.com" not in r.headers["location"]
+        # a genuine same-site path is preserved
+        r = c.post("/consent", data={"next": "/schedules"}, follow_redirects=False)
+        assert r.headers["location"] == "/schedules"
+    monkeypatch.setenv("WEBSCAN_NO_CONSENT", "1")

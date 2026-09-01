@@ -38,6 +38,7 @@ class ToolSpec:
     func: ToolFunc
     glyph: str = "🛡"
     active: bool = False         # sends payloads / is intrusive
+    local_fs: bool = False       # reads the local filesystem (CLI only; unsafe over the web)
     target_hint: str = "URL or hostname"
     order: int = 100
 

@@ -14,7 +14,7 @@ _SEV = {"CRITICAL": Severity.CRITICAL, "HIGH": Severity.HIGH, "MODERATE": Severi
         "MEDIUM": Severity.MEDIUM, "LOW": Severity.LOW}
 
 
-@tool(id="deps", name="Dependency Scanner", category="Vulnerability", glyph="📦", order=56,
+@tool(id="deps", name="Dependency Scanner", category="Vulnerability", glyph="📦", order=56, local_fs=True,
       target_hint="path to a project or manifest file",
       description="Find known-vulnerable open-source dependencies via OSV.dev (PyPI, npm, Go, …).")
 def run(target: str, options: ToolOptions) -> ToolReport:

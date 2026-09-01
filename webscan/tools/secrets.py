@@ -37,7 +37,7 @@ def _redact(value: str, keep: int = 4) -> str:
     return value if len(value) <= keep * 2 else f"{value[:keep]}…{value[-keep:]} ({len(value)} chars)"
 
 
-@tool(id="secrets", name="Secrets Scanner", category="Vulnerability", glyph="🔑", order=58,
+@tool(id="secrets", name="Secrets Scanner", category="Vulnerability", glyph="🔑", order=58, local_fs=True,
       target_hint="path to a directory or file",
       description="Scan a local codebase for hard-coded credentials, keys and tokens.")
 def run(target: str, options: ToolOptions) -> ToolReport:

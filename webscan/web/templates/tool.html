@@ -14,6 +14,7 @@
   </div>
 
   {% if error %}<div class="notice warn">{{ error }}</div>{% endif %}
+  {% if card.local_fs %}<div class="notice warn">This tool reads the local filesystem and is <strong>disabled in the web UI</strong>. Run it from the CLI: <code>webscan run {{ card.id }} /path</code>.</div>{% endif %}
   {% if is_active %}
   <div class="notice warn">This tool sends active requests to the target. Only run it against systems you own or have explicit written permission to test.</div>
   {% endif %}
