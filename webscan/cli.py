@@ -56,7 +56,7 @@ def build_parser() -> argparse.ArgumentParser:
     scan.add_argument("--max-depth", type=int, default=2, help="crawl depth (default: 2)")
     scan.add_argument("--timeout", type=float, default=15.0, help="per-request timeout in seconds")
     scan.add_argument("--workers", type=int, default=8, help="parallel checks (default: 8)")
-    scan.add_argument("--delay", type=float, default=0.0, help="min seconds between requests (politeness; avoids rate-limits/bans)")
+    scan.add_argument("--delay", type=float, default=0.0, help="min seconds between requests (politeness; avoids rate-limits/bans)")  # noqa: E501
     scan.add_argument("--insecure", action="store_true",
                       help="do not verify the target's TLS certificate")
     scan.add_argument("--offline", action="store_true",
@@ -227,7 +227,7 @@ def cmd_schedules(args: argparse.Namespace) -> int:
         return 0
     print(f"{'ID':<14}{'EVERY':<8}{'TOOL':<20}{'NEXT RUN':<18}TARGET")
     for r in rows:
-        every = f"{r['interval_seconds'] // 3600}h" if r["interval_seconds"] >= 3600 else f"{r['interval_seconds'] // 60}m"
+        every = f"{r['interval_seconds'] // 3600}h" if r["interval_seconds"] >= 3600 else f"{r['interval_seconds'] // 60}m"  # noqa: E501
         nxt = (r["next_run"] or "")[:16].replace("T", " ")
         print(f"{r['id']:<14}{every:<8}{r['tool_name'][:20]:<20}{nxt:<18}{r['target']}")
     return 0
@@ -235,6 +235,7 @@ def cmd_schedules(args: argparse.Namespace) -> int:
 
 def cmd_scheduler(args: argparse.Namespace) -> int:
     import time
+
     from webscan.core import notify, scheduler
     channels = notify.channels_configured()
     print(f"webscan scheduler running. Alert channels: {', '.join(channels) or 'none configured'}.")
@@ -302,7 +303,7 @@ def cmd_run(args: argparse.Namespace) -> int:
             from webscan.core import history
             history.record(report)
         except Exception:  # noqa: BLE001
-            pass
+            pass  # nosec B110: history persistence is best-effort
 
     fmt = args.format
     if fmt == "terminal":
@@ -453,7 +454,7 @@ def cmd_scan(args: argparse.Namespace) -> int:
         from webscan.core import history
         history.record(result)
     except Exception:  # noqa: BLE001
-        pass
+        pass  # nosec B110: history persistence is best-effort
 
     _emit(result, args)
 
@@ -530,10 +531,10 @@ def _emit(result: ScanResult, args: argparse.Namespace) -> None:
 
 
 def _open(path: Path) -> None:
-    import subprocess
+    import subprocess  # nosec B404: opener with a fixed argv list (no shell)
     opener = {"darwin": "open", "win32": "start"}.get(sys.platform, "xdg-open")
     try:
-        subprocess.run([opener, str(path)], check=False,
+        subprocess.run([opener, str(path)], check=False,  # nosec B603: fixed argv, no shell
                        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     except FileNotFoundError:
         pass

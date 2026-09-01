@@ -76,7 +76,7 @@ def run(target: str, options: ToolOptions) -> ToolReport:
         if not options.offline:
             for scheme in ("https", "http"):
                 try:
-                    resp = requests.get(f"{scheme}://{cand}/", timeout=min(options.timeout, 6),
+                    resp = requests.get(f"{scheme}://{cand}/", timeout=min(options.timeout, 6),  # nosec B113
                                         headers={"User-Agent": "webscan-light"}, allow_redirects=True)
                     import re as _re
                     m = _re.search(r"<title[^>]*>(.*?)</title>", resp.text, _re.I | _re.S)

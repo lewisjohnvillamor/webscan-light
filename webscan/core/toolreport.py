@@ -72,7 +72,7 @@ class ToolReport:
     def sorted_findings(self) -> list[Finding]:
         return sorted(self.findings, key=lambda f: (-int(f.severity), self.findings.index(f)))
 
-    def finish(self, status: str = "Finished") -> "ToolReport":
+    def finish(self, status: str = "Finished") -> ToolReport:
         self.finish_time = datetime.now(timezone.utc)
         self.status = status
         return self

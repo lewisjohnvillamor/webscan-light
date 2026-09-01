@@ -5,7 +5,7 @@ import concurrent.futures
 import ipaddress
 import socket
 
-from webscan.core.models import Confidence, Finding, Severity, Table
+from webscan.core.models import Confidence, Finding, Table
 from webscan.core.toolreport import Section, ToolReport
 
 from .base import ToolOptions, tool

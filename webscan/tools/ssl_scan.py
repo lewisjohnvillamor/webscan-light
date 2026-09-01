@@ -38,7 +38,7 @@ def _parse_date(value: str) -> datetime | None:
 
 
 def _try_protocol(host: str, port: int, version, timeout: float) -> tuple[bool, str | None]:
-    ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+    ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)  # nosec B323: probing protocol support requires no verification
     ctx.check_hostname = False
     ctx.verify_mode = ssl.CERT_NONE
     try:
@@ -83,7 +83,7 @@ def run(target: str, options: ToolOptions) -> ToolReport:
     except (ssl.SSLError, OSError) as exc:
         # Retry without verification so we can still describe the certificate.
         try:
-            uctx = ssl._create_unverified_context()
+            uctx = ssl._create_unverified_context()  # nosec B323: describing an untrusted cert requires no verification
             with socket.create_connection((host, port), timeout=options.timeout) as sock:
                 with uctx.wrap_socket(sock, server_hostname=host) as tls:
                     cert = tls.getpeercert() or {}
@@ -121,7 +121,7 @@ def run(target: str, options: ToolOptions) -> ToolReport:
     # Protocol support matrix.
     proto_rows = []
     supported = {}
-    for label, version, is_weak in PROTOCOLS:
+    for label, version, _is_weak in PROTOCOLS:
         if version is None:
             continue
         ok, cipher = _try_protocol(host, port, version, options.timeout)
@@ -161,7 +161,7 @@ def run(target: str, options: ToolOptions) -> ToolReport:
             recommendation="Renew now and automate renewal.",
             classification=Classification(cwe=["CWE-298"]),
         ))
-    for label, version, is_weak in PROTOCOLS:
+    for label, _version, is_weak in PROTOCOLS:
         if is_weak and supported.get(label):
             report.findings.append(Finding(
                 test_id=f"ssl_proto_{label}", title=f"Deprecated protocol enabled: {label}",

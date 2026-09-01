@@ -6,8 +6,8 @@ of sync with the checks that actually ran.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from typing import Callable, Iterable
+from collections.abc import Callable, Iterable
+from dataclasses import dataclass
 
 from .models import Finding
 

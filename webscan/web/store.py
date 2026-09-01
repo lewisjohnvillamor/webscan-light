@@ -8,9 +8,9 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any
 
+from webscan.core import history
 from webscan.core.engine import ScanOptions, run_scan
 from webscan.core.toolreport import ToolReport
-from webscan.core import history
 from webscan.tools.base import ToolOptions, get_tool
 
 
@@ -133,9 +133,9 @@ class JobStore:
         return jobs[:limit]
 
 
-def _persist(job: "Job") -> None:
+def _persist(job: Job) -> None:
     """Save a finished job to the database; never let persistence break a scan."""
     try:
         history.record(job.result, job.id)
     except Exception:  # noqa: BLE001
-        pass
+        pass  # nosec B110: persistence is best-effort, must not fail a scan

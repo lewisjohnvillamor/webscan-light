@@ -21,7 +21,7 @@ class Severity(enum.IntEnum):
         return self.name.capitalize()
 
     @classmethod
-    def from_cvss(cls, score: float) -> "Severity":
+    def from_cvss(cls, score: float) -> Severity:
         if score >= 9.0:
             return cls.CRITICAL
         if score >= 7.0:

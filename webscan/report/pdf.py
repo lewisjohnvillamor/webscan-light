@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import os
 import shutil
-import subprocess
+import subprocess  # nosec B404: used only with a fixed argv list (no shell)
 import tempfile
 from pathlib import Path
 
@@ -87,7 +87,7 @@ def html_to_pdf(markup: str, path: str | Path) -> Path:
             f"--print-to-pdf={output}",
             source.as_uri(),
         ]
-        process = subprocess.run(command, capture_output=True, text=True, timeout=120)
+        process = subprocess.run(command, capture_output=True, text=True, timeout=120)  # nosec B603: fixed argv, no shell
 
     if not output.exists() or output.stat().st_size == 0:
         raise PdfUnavailable(

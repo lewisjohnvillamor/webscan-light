@@ -84,9 +84,11 @@ def list_scans(limit: int = 100, target: str | None = None, tool_id: str | None 
              "findings_count, rating_counts, created_at, duration FROM scans")
     clauses, params = [], []
     if target:
-        clauses.append("target LIKE ?"); params.append(f"%{target}%")
+        clauses.append("target LIKE ?")
+        params.append(f"%{target}%")
     if tool_id:
-        clauses.append("tool_id = ?"); params.append(tool_id)
+        clauses.append("tool_id = ?")
+        params.append(tool_id)
     if clauses:
         query += " WHERE " + " AND ".join(clauses)
     query += " ORDER BY created_at DESC LIMIT ?"

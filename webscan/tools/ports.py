@@ -66,7 +66,7 @@ def _grab_banner(host: str, port: int, timeout: float) -> str:
             sock.settimeout(timeout)
             if port in (443, 8443, 993, 995, 465, 4443):
                 try:
-                    ctx = ssl._create_unverified_context()
+                    ctx = ssl._create_unverified_context()  # nosec B323: banner grab must not verify arbitrary services
                     with ctx.wrap_socket(sock, server_hostname=host) as tls:
                         return f"TLS {tls.version()}"
                 except (ssl.SSLError, OSError):

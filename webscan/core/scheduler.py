@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import json
 import threading
-import time
 import uuid
 from datetime import datetime, timedelta, timezone
 
@@ -143,7 +142,7 @@ class Scheduler:
             try:
                 run_due()
             except Exception:  # noqa: BLE001
-                pass
+                pass  # nosec B110: one bad schedule must not kill the loop
             self._stop.wait(self.poll_seconds)
 
     def stop(self) -> None:

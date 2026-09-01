@@ -10,7 +10,6 @@ Every send is best-effort and never raises.
 """
 from __future__ import annotations
 
-import json
 import os
 import smtplib
 import ssl

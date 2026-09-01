@@ -36,7 +36,7 @@ TAKEOVER_SIGNATURES = [
                                       "For root URLs (like http://example.com/) you must provide an index.html file"]),
     ("Amazon S3", ["amazonaws.com"], ["NoSuchBucket", "The specified bucket does not exist"]),
     ("Heroku", ["herokuapp.com", "herokudns.com"], ["No such app", "herokucdn.com/error-pages/no-such-app.html"]),
-    ("Amazon CloudFront", ["cloudfront.net"], ["The request could not be satisfied", "ERROR: The request could not be satisfied"]),
+    ("Amazon CloudFront", ["cloudfront.net"], ["The request could not be satisfied", "ERROR: The request could not be satisfied"]),  # noqa: E501
     ("Fastly", ["fastly.net"], ["Fastly error: unknown domain"]),
     ("Shopify", ["myshopify.com"], ["Sorry, this shop is currently unavailable", "Only one step left!"]),
     ("Zendesk", ["zendesk.com"], ["Help Center Closed"]),

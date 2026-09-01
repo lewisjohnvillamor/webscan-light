@@ -26,7 +26,7 @@ def _root_domain(target: str) -> str:
 def _crtsh(domain: str, timeout: float) -> set[str]:
     found: set[str] = set()
     try:
-        response = requests.get(
+        response = requests.get(  # nosec B113: timeout set on the next line
             "https://crt.sh/", params={"q": f"%.{domain}", "output": "json"},
             timeout=max(timeout, 20), headers={"User-Agent": "webscan-light"},
         )

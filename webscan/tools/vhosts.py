@@ -20,7 +20,7 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 def _fetch(ip: str, host: str, scheme: str, timeout: float) -> tuple[int, int] | None:
     try:
         resp = requests.get(f"{scheme}://{ip}/", headers={"Host": host, "User-Agent": "webscan-light"},
-                            timeout=timeout, verify=False, allow_redirects=False)
+                            timeout=timeout, verify=False, allow_redirects=False)  # nosec B501: vhost probe by IP; cert cannot match the tested Host
         return resp.status_code, len(resp.content)
     except requests.RequestException:
         return None

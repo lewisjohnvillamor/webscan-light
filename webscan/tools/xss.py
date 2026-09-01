@@ -6,7 +6,6 @@ execution would be possible. It never delivers a working exploit payload.
 """
 from __future__ import annotations
 
-
 from webscan.core.http import HttpClient, normalize_target
 from webscan.core.models import Classification, Confidence, Finding, Severity, Table
 from webscan.core.toolreport import Section, ToolReport

@@ -42,7 +42,7 @@ class OSV:
                 except (requests.RequestException, json.JSONDecodeError) as exc:
                     self.errors.append(f"OSV query failed: {type(exc).__name__}")
                     break
-                for dep, res in zip(batch, results):
+                for dep, res in zip(batch, results, strict=False):
                     key = (dep["ecosystem"], dep["name"], dep["version"])
                     ids = [v["id"] for v in (res.get("vulns") or [])]
                     result[key] = ids

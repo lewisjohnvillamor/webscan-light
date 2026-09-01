@@ -12,7 +12,7 @@ from .manifests import SKIP_DIRS
 
 PATTERNS = [
     ("AWS access key ID", re.compile(r"\b(AKIA|ASIA)[0-9A-Z]{16}\b"), Severity.HIGH),
-    ("AWS secret access key", re.compile(r"(?i)aws_secret_access_key\s*[:=]\s*['\"]?[A-Za-z0-9/+=]{40}"), Severity.CRITICAL),
+    ("AWS secret access key", re.compile(r"(?i)aws_secret_access_key\s*[:=]\s*['\"]?[A-Za-z0-9/+=]{40}"), Severity.CRITICAL),  # noqa: E501
     ("GitHub token", re.compile(r"\bgh[pousr]_[A-Za-z0-9]{36,}\b"), Severity.HIGH),
     ("GitLab token", re.compile(r"\bglpat-[A-Za-z0-9_-]{20,}\b"), Severity.HIGH),
     ("Google API key", re.compile(r"\bAIza[0-9A-Za-z_\-]{35}\b"), Severity.HIGH),
@@ -20,10 +20,10 @@ PATTERNS = [
     ("Stripe live key", re.compile(r"\b[sr]k_live_[0-9a-zA-Z]{24,}\b"), Severity.CRITICAL),
     ("Twilio key", re.compile(r"\bSK[0-9a-fA-F]{32}\b"), Severity.HIGH),
     ("SendGrid key", re.compile(r"\bSG\.[A-Za-z0-9_\-]{22}\.[A-Za-z0-9_\-]{43}\b"), Severity.HIGH),
-    ("Private key block", re.compile(r"-----BEGIN (?:RSA |EC |DSA |OPENSSH |PGP )?PRIVATE KEY-----"), Severity.CRITICAL),
+    ("Private key block", re.compile(r"-----BEGIN (?:RSA |EC |DSA |OPENSSH |PGP )?PRIVATE KEY-----"), Severity.CRITICAL),  # noqa: E501
     ("JWT", re.compile(r"\beyJ[A-Za-z0-9_\-]{10,}\.eyJ[A-Za-z0-9_\-]{10,}\.[A-Za-z0-9_\-]{10,}\b"), Severity.MEDIUM),
-    ("DB connection string w/ creds", re.compile(r"(?i)\b(?:mysql|postgres(?:ql)?|mongodb(?:\+srv)?|redis)://[^\s:@/]+:[^\s:@/]+@"), Severity.HIGH),
-    ("Generic hard-coded secret", re.compile(r"(?i)(?:api[_-]?key|secret|passwd|password|token|access[_-]?key)\s*[:=]\s*['\"][^'\"\s]{8,}['\"]"), Severity.MEDIUM),
+    ("DB connection string w/ creds", re.compile(r"(?i)\b(?:mysql|postgres(?:ql)?|mongodb(?:\+srv)?|redis)://[^\s:@/]+:[^\s:@/]+@"), Severity.HIGH),  # noqa: E501
+    ("Generic hard-coded secret", re.compile(r"(?i)(?:api[_-]?key|secret|passwd|password|token|access[_-]?key)\s*[:=]\s*['\"][^'\"\s]{8,}['\"]"), Severity.MEDIUM),  # noqa: E501
     ("Slack webhook", re.compile(r"https://hooks\.slack\.com/services/[A-Za-z0-9/]{40,}"), Severity.MEDIUM),
 ]
 SKIP_EXT = {".png", ".jpg", ".jpeg", ".gif", ".svg", ".ico", ".pdf", ".zip", ".gz", ".tar",

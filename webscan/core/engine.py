@@ -3,9 +3,9 @@ from __future__ import annotations
 
 import concurrent.futures
 import logging
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Callable
 
 from webscan.intel.feeds import Intel
 

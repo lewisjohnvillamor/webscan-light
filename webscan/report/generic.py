@@ -16,7 +16,7 @@ from .html import NUMERIC_COLUMNS, SEVERITY_VARS, _environment
 # Short monospace codes used as the report/masthead mark (no emoji).
 TOOL_GLYPHS = {
     "website": "WEB", "ssl": "TLS", "ports": "PRT", "network": "NET", "subdomains": "SUB",
-    "vhosts": "VHT", "dnsemail": "DNS", "deps": "DEP", "webmisc": "MSC", "cloud": "CLD", "secrets": "SEC", "typosquat": "TYP", "asm": "ASM", "recon": "RCN", "api": "API", "urlfuzzer": "FUZ", "dorks": "DRK",
+    "vhosts": "VHT", "dnsemail": "DNS", "deps": "DEP", "webmisc": "MSC", "cloud": "CLD", "secrets": "SEC", "typosquat": "TYP", "asm": "ASM", "recon": "RCN", "api": "API", "urlfuzzer": "FUZ", "dorks": "DRK",  # noqa: E501
     "takeover": "TKO", "xss": "XSS", "sqli": "SQL", "sniper": "SNP", "logger": "LOG",
 }
 
@@ -31,8 +31,9 @@ def _build_charts(report: ToolReport) -> dict:
     stack = charts.stacked_bar([(name, counts[name], var) for name, var in SEVERITY_VARS.items()])
     confirmed = sum(1 for f in report.findings if f.confidence.value == "CONFIRMED")
     return {
-        "gauges": [Markup(g) for g in gauges],
-        "stack": Markup(stack),
+        # chart values are server-generated inline SVG, not user input.
+        "gauges": [Markup(g) for g in gauges],  # nosec B704
+        "stack": Markup(stack),  # nosec B704
         "confirmed": confirmed,
         "unconfirmed": len(report.findings) - confirmed,
         "total_findings": len(report.findings),

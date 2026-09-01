@@ -10,7 +10,9 @@ from __future__ import annotations
 from webscan.core.models import Confidence, Finding, Severity, Table
 from webscan.core.toolreport import Section, ToolReport
 
-from . import dns_email, ports as ports_tool, ssl_scan, subdomains as subdomains_tool, takeover
+from . import dns_email, ssl_scan, takeover
+from . import ports as ports_tool
+from . import subdomains as subdomains_tool
 from .base import ToolOptions, tool
 from .subdomains import _root_domain
 

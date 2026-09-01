@@ -18,9 +18,8 @@ from . import database
 
 def record(result, scan_id: str | None = None) -> str:
     """Render and persist a ScanResult or ToolReport. Returns the row id."""
-    from webscan.report import generic
+    from webscan.report import generic, jsonout, sarif
     from webscan.report import html as html_report
-    from webscan.report import jsonout, sarif
 
     scan_id = scan_id or uuid.uuid4().hex[:12]
     is_website = isinstance(result, ScanResult)

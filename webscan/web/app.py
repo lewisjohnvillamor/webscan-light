@@ -5,12 +5,14 @@ self-hosted footprint small.
 """
 from __future__ import annotations
 
+import contextlib
 import os
 import tempfile
 from pathlib import Path
 
 from starlette.applications import Starlette
 from starlette.exceptions import HTTPException
+from starlette.middleware import Middleware
 from starlette.requests import Request
 from starlette.responses import (
     FileResponse,
@@ -20,19 +22,17 @@ from starlette.responses import (
     RedirectResponse,
     Response,
 )
-from starlette.middleware import Middleware
 from starlette.routing import Route
 from starlette.templating import Jinja2Templates
 
 from webscan import __version__
+from webscan.core import database, history, notify, scope
+from webscan.core import scheduler as scheduler_mod
 from webscan.core.engine import ScanOptions
 from webscan.core.http import normalize_target
 from webscan.core.registry import load_checks
-from webscan.core import database, history, notify, scope
-from webscan.core import scheduler as scheduler_mod
-from webscan.report import generic
+from webscan.report import generic, jsonout, pdf, sarif
 from webscan.report import html as html_report
-from webscan.report import jsonout, pdf, sarif
 from webscan.tools.base import ToolOptions, all_tools, get_tool, load_tools
 
 from . import auth
@@ -424,6 +424,7 @@ async def stored_pdf(request: Request):
 
 async def stored_badge(request: Request):
     import json as _json
+
     from webscan.report import badge, scoring
     row = _stored_or_404(request.path_params["scan_id"])
     letter, _ = scoring.grade_from_counts(_json.loads(row["rating_counts"] or "{}"))
@@ -505,8 +506,6 @@ routes = [
     Route("/logger/{token}", logger_capture, methods=_CAPTURE_METHODS),
     Route("/logger/{token}/{subpath:path}", logger_capture, methods=_CAPTURE_METHODS),
 ]
-
-import contextlib
 
 _scheduler = scheduler_mod.Scheduler()
 

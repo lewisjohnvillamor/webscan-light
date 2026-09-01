@@ -8,7 +8,7 @@ and merges their findings and evidence into one report.
 from __future__ import annotations
 
 from webscan.core.engine import ScanOptions, run_scan
-from webscan.core.models import Finding, Severity, Table
+from webscan.core.models import Table
 from webscan.core.toolreport import Section, ToolReport
 
 from . import ports as ports_tool

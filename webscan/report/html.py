@@ -39,7 +39,8 @@ URL_RE = re.compile(r"https?://[^\s<>\"')\]]+")
 
 def _linkify(value: object) -> Markup:
     text = str(escape(str(value)))
-    return Markup(URL_RE.sub(lambda m: f'<a href="{m.group(0)}">{m.group(0)}</a>', text))
+    # text is already HTML-escaped above; we only add <a> wrappers to URLs.
+    return Markup(URL_RE.sub(lambda m: f'<a href="{m.group(0)}">{m.group(0)}</a>', text))  # nosec B704
 
 
 def _localtime(value: datetime | None) -> str:
@@ -92,9 +93,10 @@ def _build_charts(result: ScanResult) -> dict:
     return {
         "grade": letter,
         "grade_score": score,
-        "gauges": [Markup(g) for g in gauges],
-        "stack": Markup(stack),
-        "owasp_chart": Markup(owasp_chart),
+        # chart values are server-generated inline SVG, not user input.
+        "gauges": [Markup(g) for g in gauges],  # nosec B704
+        "stack": Markup(stack),  # nosec B704
+        "owasp_chart": Markup(owasp_chart),  # nosec B704
         "confirmed": confirmed,
         "unconfirmed": len(result.findings) - confirmed,
         "total_findings": len(result.findings),
