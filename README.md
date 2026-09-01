@@ -198,6 +198,69 @@ Because this is version-based detection rather than active exploitation,
 findings are reported as **Unconfirmed** and capped at **High** severity —
 never Critical.
 
+## Self-hosting: security, history and scheduling
+
+### Authentication
+
+The web UI is unauthenticated by default (intended for `127.0.0.1`). When you
+expose it, set an access token:
+
+```bash
+WEBSCAN_TOKEN=$(openssl rand -hex 16) webscan serve --host 0.0.0.0
+```
+
+Browsers sign in at `/login`; automation sends `Authorization: Bearer <token>`
+(or `X-Webscan-Token`). `/health` and the request-logger capture URLs stay
+public. `serve` warns if you bind to a non-loopback address without a token.
+
+### SSRF scope guard
+
+Because the server fetches whatever target a caller names, the web UI blocks
+targets that resolve to loopback, private, link-local, reserved or cloud-metadata
+addresses (every resolved IP is checked, defeating DNS-rebinding). To scan your
+own internal network on purpose, opt in:
+
+```bash
+WEBSCAN_ALLOW_PRIVATE=1 webscan serve
+```
+
+The CLI is not scope-restricted — it runs with your own privileges.
+
+### History
+
+Every finished scan (CLI or web) is stored in SQLite and can be re-opened or
+exported later.
+
+```bash
+webscan history                 # list stored scans
+```
+
+In the UI, the **History** tab lists past scans with HTML/PDF/JSON links.
+Storage lives under `~/.local/share/webscan-light/` (override with
+`WEBSCAN_DATA_DIR` or `WEBSCAN_DB`).
+
+### Scheduled scans + alerts
+
+Run a scan on a repeating interval and get alerted only when a **new** finding
+appears versus the previous run.
+
+```bash
+webscan schedule website https://example.com --every 1d
+webscan schedule ssl example.com --every 12h
+webscan schedules                       # list
+webscan scheduler                       # run the loop headless (no UI)
+```
+
+The scheduler also runs inside `webscan serve` (the **Schedules** tab manages
+it). Configure alert channels via env:
+
+| Variable | Purpose |
+| --- | --- |
+| `WEBSCAN_WEBHOOK_URL` | POST a JSON payload (Slack/Discord/generic) on new findings |
+| `WEBSCAN_SMTP_HOST` / `_PORT` / `_USER` / `_PASSWORD` / `_FROM` / `_TO` | email alerts |
+
+Scans still run and are stored even with no alert channel configured.
+
 ## Configuration
 
 | Environment variable | Effect |
@@ -205,6 +268,11 @@ never Critical.
 | `WEBSCAN_NVD_API_KEY` | NVD API key, for a higher rate limit |
 | `WEBSCAN_CACHE_DIR` | Cache location (default `~/.cache/webscan-light`) |
 | `WEBSCAN_CHROME` | Path to Chrome/Chromium for PDF export |
+| `WEBSCAN_TOKEN` | Require this token to use the web UI/API |
+| `WEBSCAN_ALLOW_PRIVATE` | Permit scanning private/internal targets from the web UI |
+| `WEBSCAN_DATA_DIR` / `WEBSCAN_DB` | Where scan history is stored |
+| `WEBSCAN_WEBHOOK_URL`, `WEBSCAN_SMTP_*` | New-finding alert channels |
+| `WEBSCAN_NO_SCHEDULER` | Set to 1 to disable the in-server scheduler |
 
 PDF export drives a headless Chromium. If none is found, `-f pdf` writes the
 HTML report instead and tells you — every other format works without it.
@@ -261,4 +329,10 @@ misuse.
 
 ## License
 
-MIT
+**GNU AGPL-3.0-or-later.** You are free to use, run, study, modify and share
+this software. The AGPL adds one condition to the GPL: if you run a modified
+version as a network service, you must offer that service's users the modified
+source. This keeps the project — and any hosted fork of it — free and open.
+
+If you need a permissive license (e.g. to embed in a closed-source product),
+open an issue to discuss; MIT/Apache-2.0 dual-licensing can be considered.

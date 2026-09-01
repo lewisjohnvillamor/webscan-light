@@ -111,6 +111,18 @@ def build_parser() -> argparse.ArgumentParser:
     hist.add_argument("query", nargs="?", default="", help="filter by target substring")
     hist.add_argument("--limit", type=int, default=30, help="rows to show (default: 30)")
 
+    sch = subparsers.add_parser("schedule", help="add a recurring scan")
+    sch.add_argument("tool", help="tool id (or 'website')")
+    sch.add_argument("target", help="URL, host or domain")
+    sch.add_argument("--every", default="1d", help="interval, e.g. 30m, 12h, 1d (default 1d)")
+    sch.add_argument("--authorized", action="store_true", help="authorise active tools")
+
+    subparsers.add_parser("schedules", help="list recurring scans").add_argument(
+        "--remove", metavar="ID", help="delete a schedule by id")
+
+    subparsers.add_parser("scheduler",
+                          help="run the scheduler loop in the foreground (headless, no web UI)")
+
     update = subparsers.add_parser("update", help="pre-warm the CVE/EPSS/KEV cache")
     update.add_argument("software", nargs="*",
                         help="'vendor:product@version' pairs, e.g. f5:nginx@1.18.0")
@@ -176,6 +188,63 @@ def cmd_history(args: argparse.Namespace) -> int:
         print(f"{when:<17} {r['overall_risk']:<9} {str(r['findings_count']):<9} "
               f"{r['tool_name'][:20]:<20} {r['target']}")
     print(f"\n{len(rows)} scans. Open a full report with 'webscan serve' -> History.")
+    return 0
+
+
+def _parse_duration(text: str) -> int:
+    text = (text or "").strip().lower()
+    units = {"s": 1, "m": 60, "h": 3600, "d": 86400}
+    if text and text[-1] in units and text[:-1].replace(".", "", 1).isdigit():
+        return max(60, int(float(text[:-1]) * units[text[-1]]))
+    return max(60, int(text)) if text.isdigit() else 86400
+
+
+def cmd_schedule(args: argparse.Namespace) -> int:
+    from webscan.core import scheduler
+    try:
+        entry = scheduler.add_schedule(args.tool, args.target, _parse_duration(args.every),
+                                       {"authorized": args.authorized})
+    except ValueError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
+    print(f"Scheduled {entry['tool_name']} on {entry['target']} every "
+          f"{args.every} (id {entry['id']}).")
+    print("Run 'webscan scheduler' (or 'webscan serve') to execute due schedules.")
+    return 0
+
+
+def cmd_schedules(args: argparse.Namespace) -> int:
+    from webscan.core import database
+    if getattr(args, "remove", None):
+        database.delete_schedule(args.remove)
+        print(f"Removed schedule {args.remove}.")
+        return 0
+    rows = database.list_schedules()
+    if not rows:
+        print("No schedules yet. Add one with 'webscan schedule <tool> <target> --every 1d'.")
+        return 0
+    print(f"{'ID':<14}{'EVERY':<8}{'TOOL':<20}{'NEXT RUN':<18}TARGET")
+    for r in rows:
+        every = f"{r['interval_seconds'] // 3600}h" if r["interval_seconds"] >= 3600 else f"{r['interval_seconds'] // 60}m"
+        nxt = (r["next_run"] or "")[:16].replace("T", " ")
+        print(f"{r['id']:<14}{every:<8}{r['tool_name'][:20]:<20}{nxt:<18}{r['target']}")
+    return 0
+
+
+def cmd_scheduler(args: argparse.Namespace) -> int:
+    import time
+    from webscan.core import notify, scheduler
+    channels = notify.channels_configured()
+    print(f"webscan scheduler running. Alert channels: {', '.join(channels) or 'none configured'}.")
+    print("Press Ctrl-C to stop.")
+    try:
+        while True:
+            ran = scheduler.run_due()
+            if ran:
+                print(f"[{__import__('datetime').datetime.now():%H:%M:%S}] ran {ran} scheduled scan(s)")
+            time.sleep(30)
+    except KeyboardInterrupt:
+        print("\nstopped.")
     return 0
 
 
@@ -554,6 +623,12 @@ def main(argv: list[str] | None = None) -> int:
         return cmd_update(args)
     if args.command == "history":
         return cmd_history(args)
+    if args.command == "schedule":
+        return cmd_schedule(args)
+    if args.command == "schedules":
+        return cmd_schedules(args)
+    if args.command == "scheduler":
+        return cmd_scheduler(args)
     return 1
 
 

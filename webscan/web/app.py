@@ -27,7 +27,8 @@ from webscan import __version__
 from webscan.core.engine import ScanOptions
 from webscan.core.http import normalize_target
 from webscan.core.registry import load_checks
-from webscan.core import history, scope
+from webscan.core import history, notify, scope
+from webscan.core import scheduler as scheduler_mod
 from webscan.report import generic
 from webscan.report import html as html_report
 from webscan.report import jsonout, pdf, sarif
@@ -252,6 +253,53 @@ def _tool_error(request: Request, tool_id: str, message: str):
                                       status_code=400)
 
 
+def _parse_duration(text: str) -> int:
+    text = (text or "").strip().lower()
+    units = {"s": 1, "m": 60, "h": 3600, "d": 86400}
+    if text and text[-1] in units and text[:-1].replace(".", "", 1).isdigit():
+        return max(60, int(float(text[:-1]) * units[text[-1]]))
+    if text.isdigit():
+        return max(60, int(text))
+    return 86400  # default daily
+
+
+async def schedules_page(request: Request):
+    rows = scheduler_mod.database.list_schedules()
+    return templates.TemplateResponse(request, "schedules.html", {
+        "version": __version__, "schedules": rows, "cards": _tool_cards(),
+        "channels": notify.channels_configured()})
+
+
+async def schedule_add(request: Request):
+    form = await request.form()
+    tool_id = (form.get("tool_id") or "").strip()
+    target = (form.get("target") or "").strip()
+    every = _parse_duration(form.get("every") or "1d")
+    if not target or not (tool_id == "website" or get_tool(tool_id)):
+        raise HTTPException(status_code=400, detail="tool and target are required")
+    allowed, reason = scope.check(target)
+    if not allowed:
+        raise HTTPException(status_code=400, detail=f"blocked: {reason}")
+    scheduler_mod.add_schedule(tool_id, target, every,
+                               {"authorized": _truthy(form.get("authorized"))})
+    return RedirectResponse(url="/schedules", status_code=303)
+
+
+async def schedule_delete(request: Request):
+    scheduler_mod.database.delete_schedule(request.path_params["schedule_id"])
+    return RedirectResponse(url="/schedules", status_code=303)
+
+
+async def schedule_run(request: Request):
+    sched = scheduler_mod.database.get_schedule(request.path_params["schedule_id"])
+    if sched:
+        scheduler_mod.database.update_schedule_run(
+            sched["id"], sched["last_run"] or "", scheduler_mod._now().isoformat(),
+            sched["last_scan_id"])
+        scheduler_mod.run_due()
+    return RedirectResponse(url="/schedules", status_code=303)
+
+
 async def history_page(request: Request):
     q = request.query_params.get("q", "").strip()
     scans = history.list_scans(limit=200, target=q or None)
@@ -322,6 +370,10 @@ routes = [
     Route("/health", health),
     Route("/login", login, methods=["GET", "POST"]),
     Route("/history", history_page),
+    Route("/schedules", schedules_page),
+    Route("/schedules", schedule_add, methods=["POST"]),
+    Route("/schedules/{schedule_id}/delete", schedule_delete, methods=["POST"]),
+    Route("/schedules/{schedule_id}/run", schedule_run, methods=["POST"]),
     Route("/report/{scan_id}.json", stored_json),
     Route("/report/{scan_id}.sarif", stored_sarif),
     Route("/report/{scan_id}.pdf", stored_pdf),
@@ -342,4 +394,20 @@ routes = [
     Route("/logger/{token}/{subpath:path}", logger_capture, methods=_CAPTURE_METHODS),
 ]
 
-app = Starlette(routes=routes, middleware=[Middleware(auth.AuthMiddleware)])
+import contextlib
+import os as _os
+
+_scheduler = scheduler_mod.Scheduler()
+
+
+@contextlib.asynccontextmanager
+async def _lifespan(app):
+    if _os.environ.get("WEBSCAN_NO_SCHEDULER", "").lower() not in ("1", "true", "yes", "on"):
+        _scheduler.start()
+    try:
+        yield
+    finally:
+        _scheduler.stop()
+
+
+app = Starlette(routes=routes, middleware=[Middleware(auth.AuthMiddleware)], lifespan=_lifespan)
