@@ -1,6 +1,8 @@
 """The object every check receives."""
 from __future__ import annotations
 
+import threading
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any
 from urllib.parse import urlparse
@@ -16,6 +18,20 @@ class ScanContext:
     crawl: CrawlResult
     tls: dict[str, Any] = field(default_factory=dict)
     shared: dict[str, Any] = field(default_factory=dict)
+    _lock: threading.Lock = field(default_factory=threading.Lock, repr=False)
+
+    def cached(self, key: str, factory: Callable[[], Any]) -> Any:
+        """Compute ``factory`` once and share it across checks (thread-safe).
+
+        Checks run in parallel; without this a fingerprint or cookie parse could
+        run several times. The double-check keeps the common (hit) path lock-free.
+        """
+        if key in self.shared:
+            return self.shared[key]
+        with self._lock:
+            if key not in self.shared:
+                self.shared[key] = factory()
+            return self.shared[key]
 
     @property
     def port(self) -> str:

@@ -4,17 +4,17 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "webscan-light"
-version = "1.0.0"
+dynamic = ["version"]
 description = "A free, self-hosted website vulnerability scanner with CLI and web UI"
 readme = "README.md"
 requires-python = ">=3.10"
-license = { text = "MIT" }
+license = { text = "AGPL-3.0-or-later" }
 keywords = ["security", "scanner", "vulnerability", "cve", "owasp", "pentest"]
 classifiers = [
   "Development Status :: 4 - Beta",
   "Environment :: Console",
   "Intended Audience :: System Administrators",
-  "License :: OSI Approved :: MIT License",
+  "License :: OSI Approved :: GNU Affero General Public License v3 or later (AGPLv3+)",
   "Programming Language :: Python :: 3",
   "Topic :: Security",
 ]
@@ -22,13 +22,15 @@ dependencies = [
   "requests>=2.28",
   "beautifulsoup4>=4.11",
   "jinja2>=3.1",
-  "rich>=13.0",
 ]
 
 [project.optional-dependencies]
-web = ["fastapi>=0.110", "uvicorn[standard]>=0.27", "python-multipart>=0.0.9"]
-dev = ["pytest>=7.4", "pytest-cov>=4.1"]
-all = ["webscan-light[web,dev]"]
+# Prettier terminal output. The CLI works without it (plain-text fallback).
+cli = ["rich>=13.0"]
+# Local web UI. Starlette + uvicorn only — no pydantic, no uvloop.
+web = ["starlette>=0.37", "uvicorn>=0.27", "python-multipart>=0.0.9"]
+dev = ["pytest>=7.4", "httpx>=0.27", "ruff>=0.6", "bandit>=1.7"]
+all = ["webscan-light[cli,web]"]
 
 [project.scripts]
 webscan = "webscan.cli:main"
@@ -36,6 +38,9 @@ webscan = "webscan.cli:main"
 [project.urls]
 Homepage = "https://github.com/lewisjohnvillamor/webscan-light"
 Issues = "https://github.com/lewisjohnvillamor/webscan-light/issues"
+
+[tool.setuptools.dynamic]
+version = {attr = "webscan.__version__"}
 
 [tool.setuptools.packages.find]
 include = ["webscan*"]
@@ -48,8 +53,11 @@ testpaths = ["tests"]
 addopts = "-q"
 
 [tool.ruff]
-line-length = 100
+line-length = 120
 target-version = "py310"
+
+[tool.ruff.lint.per-file-ignores]
+"**/__init__.py" = ["F401"]  # modules imported to register checks/tools
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "UP", "B"]

@@ -7,10 +7,19 @@ services:
       - "127.0.0.1:8000:8000"
     volumes:
       - webscan-cache:/cache
+      - webscan-data:/data
     environment:
+      - WEBSCAN_DATA_DIR=/data
       # Optional: a free NVD key raises the CVE lookup rate limit.
       - WEBSCAN_NVD_API_KEY=${WEBSCAN_NVD_API_KEY:-}
+      # Recommended when exposing the UI: require a token to sign in.
+      - WEBSCAN_TOKEN=${WEBSCAN_TOKEN:-}
+      # Set to 1 to allow scanning private/internal targets.
+      - WEBSCAN_ALLOW_PRIVATE=${WEBSCAN_ALLOW_PRIVATE:-}
+      # Alerts on new findings from scheduled scans (optional).
+      - WEBSCAN_WEBHOOK_URL=${WEBSCAN_WEBHOOK_URL:-}
     restart: unless-stopped
 
 volumes:
   webscan-cache:
+  webscan-data:

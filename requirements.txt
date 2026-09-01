@@ -1,9 +1,12 @@
+# Core (required) — a full CLI scan needs only these three.
 requests>=2.28
 beautifulsoup4>=4.11
 jinja2>=3.1
+
+# Optional: prettier terminal output (falls back to plain text if absent)
 rich>=13.0
 
-# Web UI (webscan serve) — omit for a CLI-only install
-fastapi>=0.110
-uvicorn[standard]>=0.27
+# Optional: local web UI (webscan serve)
+starlette>=0.37
+uvicorn>=0.27
 python-multipart>=0.0.9

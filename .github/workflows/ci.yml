@@ -19,10 +19,26 @@ jobs:
           python-version: ${{ matrix.python-version }}
           cache: pip
       - name: Install
-        run: pip install -e ".[web,dev]"
+        run: pip install -e ".[web,cli,dev]"
       - name: Test
         run: pytest -q
       - name: Smoke-test the CLI
         run: |
           webscan --version
           test "$(webscan list-tests | head -1)" = "webscan-light performs 40 tests:"
+          webscan tools | grep -q "SSL/TLS Scanner"
+
+  lint:
+    runs-on: ubuntu-latest
+    name: Lint & security
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install ruff bandit
+      - name: Ruff (lint)
+        run: ruff check webscan
+      - name: Bandit (security lint)
+        run: bandit -q -r webscan

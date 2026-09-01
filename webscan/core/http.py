@@ -82,8 +82,11 @@ class HttpClient:
         verify_tls: bool = True,
         max_bytes: int = 3_000_000,
         extra_headers: dict[str, str] | None = None,
+        delay: float = 0.0,
     ) -> None:
         self.timeout = timeout
+        self.delay = max(0.0, delay)
+        self._last_request = 0.0
         self.user_agent = user_agent
         self.verify_tls = verify_tls
         self.max_bytes = max_bytes
@@ -118,6 +121,7 @@ class HttpClient:
 
         headers = dict(self.base_headers)
         headers.update(kwargs.pop("headers", {}) or {})
+        self._throttle()
         started = time.monotonic()
         try:
             raw = self.session.request(
@@ -169,6 +173,16 @@ class HttpClient:
         if cache:
             self._cache[key] = response
         return response
+
+    def _throttle(self) -> None:
+        """Enforce a global minimum interval between requests, if configured."""
+        if self.delay <= 0:
+            return
+        with self._lock:
+            wait = self.delay - (time.monotonic() - self._last_request)
+            if wait > 0:
+                time.sleep(wait)
+            self._last_request = time.monotonic()
 
     def get(self, url: str, **kwargs: Any) -> Response:
         return self.request("GET", url, **kwargs)

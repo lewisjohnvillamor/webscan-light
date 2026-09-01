@@ -1,0 +1,23 @@
+"""Importing this package registers every tool."""
+from . import (  # noqa: F401
+    apiscan,
+    asm,
+    cloud,
+    deps,
+    dns_email,
+    dorks,
+    network,
+    ports,
+    recon,
+    secrets,
+    sniper,
+    sqli,
+    ssl_scan,
+    subdomains,
+    takeover,
+    typosquat,
+    urlfuzzer,
+    vhosts,
+    webmisc,
+    xss,
+)

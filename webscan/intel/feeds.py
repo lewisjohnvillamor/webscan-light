@@ -43,7 +43,7 @@ class CVE:
         }
 
     @classmethod
-    def from_dict(cls, data: dict) -> "CVE":
+    def from_dict(cls, data: dict) -> CVE:
         return cls(**data)
 
 

@@ -56,6 +56,7 @@ def build_parser() -> argparse.ArgumentParser:
     scan.add_argument("--max-depth", type=int, default=2, help="crawl depth (default: 2)")
     scan.add_argument("--timeout", type=float, default=15.0, help="per-request timeout in seconds")
     scan.add_argument("--workers", type=int, default=8, help="parallel checks (default: 8)")
+    scan.add_argument("--delay", type=float, default=0.0, help="min seconds between requests (politeness; avoids rate-limits/bans)")  # noqa: E501
     scan.add_argument("--insecure", action="store_true",
                       help="do not verify the target's TLS certificate")
     scan.add_argument("--offline", action="store_true",
@@ -82,7 +83,52 @@ def build_parser() -> argparse.ArgumentParser:
     serve.add_argument("--port", type=int, default=8000, help="port (default: 8000)")
     serve.add_argument("--reload", action="store_true", help="auto-reload on code changes")
 
-    subparsers.add_parser("list-tests", help="list every test the scanner performs")
+    subparsers.add_parser("list-tests", help="list every test the website scanner performs")
+    subparsers.add_parser("tools", help="list every tool in the suite")
+
+    run_p = subparsers.add_parser("run", help="run a specific tool (see 'webscan tools')")
+    run_p.add_argument("tool", help="tool id, e.g. ssl, ports, subdomains, xss")
+    run_p.add_argument("target", help="URL, hostname, IP or CIDR (depends on the tool)")
+    run_p.add_argument("-f", "--format", default="terminal",
+                       choices=["terminal", "html", "pdf", "json"], help="report format")
+    run_p.add_argument("-o", "--output", help="write the report to this path")
+    run_p.add_argument("--open", action="store_true", dest="open_report",
+                       help="open the generated report")
+    run_p.add_argument("--ports", default="", help="ports for port/network scans (top100|top1000|1-1024|80,443)")
+    run_p.add_argument("--wordlist", default="", help="custom wordlist for fuzz/subdomain tools")
+    run_p.add_argument("--max-items", type=int, default=0, help="cap results / crawl breadth")
+    run_p.add_argument("--timeout", type=float, default=10.0, help="per-request timeout")
+    run_p.add_argument("--workers", type=int, default=40, help="parallel workers")
+    run_p.add_argument("--delay", type=float, default=0.0, help="min seconds between requests (politeness)")
+    run_p.add_argument("--offline", action="store_true", help="skip online lookups")
+    run_p.add_argument("--insecure", action="store_true", help="do not verify TLS")
+    run_p.add_argument("--authorized", action="store_true",
+                       help="confirm you are permitted to actively test this target (xss, sqli)")
+    run_p.add_argument("--time-based", action="store_true", help="enable time-based SQLi probe")
+    run_p.add_argument("--fail-on", choices=list(SEVERITY_BY_NAME), metavar="SEVERITY",
+                       help="exit 2 if a finding at or above this severity is found")
+    run_p.add_argument("-q", "--quiet", action="store_true")
+
+    hist = subparsers.add_parser("history", help="list stored scans")
+    hist.add_argument("query", nargs="?", default="", help="filter by target substring")
+    hist.add_argument("--limit", type=int, default=30, help="rows to show (default: 30)")
+
+    sch = subparsers.add_parser("schedule", help="add a recurring scan")
+    sch.add_argument("tool", help="tool id (or 'website')")
+    sch.add_argument("target", help="URL, host or domain")
+    sch.add_argument("--every", default="1d", help="interval, e.g. 30m, 12h, 1d (default 1d)")
+    sch.add_argument("--authorized", action="store_true", help="authorise active tools")
+
+    subparsers.add_parser("schedules", help="list recurring scans").add_argument(
+        "--remove", metavar="ID", help="delete a schedule by id")
+
+    subparsers.add_parser("scheduler",
+                          help="run the scheduler loop in the foreground (headless, no web UI)")
+
+    update = subparsers.add_parser("update", help="pre-warm the CVE/EPSS/KEV cache")
+    update.add_argument("software", nargs="*",
+                        help="'vendor:product@version' pairs, e.g. f5:nginx@1.18.0")
+    update.add_argument("--kev", action="store_true", help="refresh only the CISA KEV catalog")
     return parser
 
 
@@ -112,16 +158,264 @@ def cmd_list_tests() -> int:
     return 0
 
 
+def cmd_tools() -> int:
+    from webscan.tools.base import all_tools, load_tools
+    load_tools()
+    specs = all_tools()
+    width = max(len(s.id) for s in specs)
+    print(f"webscan-light suite — {len(specs)} tools (plus 'webscan scan' for the website scanner):\n")
+    order = {"Recon": 0, "Vulnerability": 1, "Exploit": 2}
+    specs = sorted(specs, key=lambda s: (order.get(s.category, 9), s.order, s.name))
+    current = ""
+    for spec in specs:
+        if spec.category != current:
+            current = spec.category
+            print(f"  {current}:")
+        flag = "  [active]" if spec.active else ""
+        print(f"    {spec.id.ljust(width)}  {spec.name}{flag}")
+        print(f"    {' '.ljust(width)}  {spec.description}")
+    print("\n  Run one with:  webscan run <tool> <target>")
+    return 0
+
+
+def cmd_history(args: argparse.Namespace) -> int:
+    from webscan.core import history
+    rows = history.list_scans(limit=args.limit, target=args.query or None)
+    if not rows:
+        print("No stored scans yet.")
+        return 0
+    print(f"{'DATE':<17} {'RISK':<9} {'FINDINGS':<9} {'TOOL':<20} TARGET")
+    for r in rows:
+        when = (r["created_at"] or "")[:16].replace("T", " ")
+        print(f"{when:<17} {r['overall_risk']:<9} {str(r['findings_count']):<9} "
+              f"{r['tool_name'][:20]:<20} {r['target']}")
+    print(f"\n{len(rows)} scans. Open a full report with 'webscan serve' -> History.")
+    return 0
+
+
+def _parse_duration(text: str) -> int:
+    text = (text or "").strip().lower()
+    units = {"s": 1, "m": 60, "h": 3600, "d": 86400}
+    if text and text[-1] in units and text[:-1].replace(".", "", 1).isdigit():
+        return max(60, int(float(text[:-1]) * units[text[-1]]))
+    return max(60, int(text)) if text.isdigit() else 86400
+
+
+def cmd_schedule(args: argparse.Namespace) -> int:
+    from webscan.core import scheduler
+    try:
+        entry = scheduler.add_schedule(args.tool, args.target, _parse_duration(args.every),
+                                       {"authorized": args.authorized})
+    except ValueError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
+    print(f"Scheduled {entry['tool_name']} on {entry['target']} every "
+          f"{args.every} (id {entry['id']}).")
+    print("Run 'webscan scheduler' (or 'webscan serve') to execute due schedules.")
+    return 0
+
+
+def cmd_schedules(args: argparse.Namespace) -> int:
+    from webscan.core import database
+    if getattr(args, "remove", None):
+        database.delete_schedule(args.remove)
+        print(f"Removed schedule {args.remove}.")
+        return 0
+    rows = database.list_schedules()
+    if not rows:
+        print("No schedules yet. Add one with 'webscan schedule <tool> <target> --every 1d'.")
+        return 0
+    print(f"{'ID':<14}{'EVERY':<8}{'TOOL':<20}{'NEXT RUN':<18}TARGET")
+    for r in rows:
+        every = f"{r['interval_seconds'] // 3600}h" if r["interval_seconds"] >= 3600 else f"{r['interval_seconds'] // 60}m"  # noqa: E501
+        nxt = (r["next_run"] or "")[:16].replace("T", " ")
+        print(f"{r['id']:<14}{every:<8}{r['tool_name'][:20]:<20}{nxt:<18}{r['target']}")
+    return 0
+
+
+def cmd_scheduler(args: argparse.Namespace) -> int:
+    import time
+
+    from webscan.core import notify, scheduler
+    channels = notify.channels_configured()
+    print(f"webscan scheduler running. Alert channels: {', '.join(channels) or 'none configured'}.")
+    print("Press Ctrl-C to stop.")
+    try:
+        while True:
+            ran = scheduler.run_due()
+            if ran:
+                print(f"[{__import__('datetime').datetime.now():%H:%M:%S}] ran {ran} scheduled scan(s)")
+            time.sleep(30)
+    except KeyboardInterrupt:
+        print("\nstopped.")
+    return 0
+
+
+def cmd_update(args: argparse.Namespace) -> int:
+    from webscan.intel.feeds import Intel
+    intel = Intel()
+    if args.kev or not args.software:
+        count = len(intel.kev_ids())
+        print(f"CISA KEV catalog refreshed: {count} entries cached.")
+        if args.kev:
+            return 0
+    total = 0
+    for pair in args.software:
+        if "@" not in pair:
+            print(f"skipping '{pair}' (expected vendor:product@version)", file=sys.stderr)
+            continue
+        vp, _, version = pair.partition("@")
+        cves = intel.cves_for(vp, version)
+        intel.enrich_epss(cves)
+        intel.enrich_kev(cves)
+        total += len(cves)
+        print(f"  {pair}: {len(cves)} CVEs cached")
+    if args.software:
+        print(f"Done. {total} CVEs cached for {len(args.software)} products.")
+    for error in intel.errors:
+        print(f"note: {error}", file=sys.stderr)
+    return 0
+
+
+def cmd_run(args: argparse.Namespace) -> int:
+    from webscan.report import generic
+    from webscan.tools.base import ToolOptions, get_tool, load_tools
+    load_tools()
+    spec = get_tool(args.tool)
+    if not spec:
+        print(f"error: unknown tool '{args.tool}'. Run 'webscan tools' to list them.",
+              file=sys.stderr)
+        return 1
+
+    options = ToolOptions(
+        timeout=args.timeout, workers=args.workers, offline=args.offline,
+        verify_tls=not args.insecure, ports=args.ports, wordlist=args.wordlist, delay=args.delay,
+        max_items=args.max_items, active=True, authorized=args.authorized,
+        extra={"time_based": "1"} if args.time_based else {},
+    )
+    if spec.active and not args.quiet and sys.stderr.isatty():
+        print(f"  Running {spec.name} against {args.target} — only test systems you are "
+              "authorised to.", file=sys.stderr)
+
+    report = spec.func(args.target, options)
+    if report.status == "Finished":
+        try:
+            from webscan.core import history
+            history.record(report)
+        except Exception:  # noqa: BLE001
+            pass  # nosec B110: history persistence is best-effort
+
+    fmt = args.format
+    if fmt == "terminal":
+        _print_tool_terminal(report)
+    else:
+        extension = {"html": "html", "pdf": "pdf", "json": "json"}[fmt]
+        if args.output:
+            output = Path(args.output)
+        elif fmt == "json" and not sys.stdout.isatty():
+            print(generic.render_json(report))
+            return _tool_exit(report, args)
+        else:
+            output = _default_output(f"{spec.id}-{report.target}", extension)
+        if fmt == "html":
+            generic.write(report, output)
+        elif fmt == "json":
+            output.write_text(generic.render_json(report), encoding="utf-8")
+        else:
+            try:
+                pdf.html_to_pdf(generic.render(report), output)
+            except pdf.PdfUnavailable as exc:
+                print(f"error: {exc}", file=sys.stderr)
+                fallback = output.with_suffix(".html")
+                generic.write(report, fallback)
+                print(f"wrote HTML instead: {fallback}", file=sys.stderr)
+                return _tool_exit(report, args)
+        print(f"report written to {output}")
+        if args.open_report:
+            _open(output)
+    return _tool_exit(report, args)
+
+
+def _tool_exit(report, args) -> int:
+    if report.status in ("Failed", "Blocked"):
+        for error in report.errors:
+            print(f"note: {error}", file=sys.stderr)
+        return 1 if report.status == "Failed" else 0
+    if getattr(args, "fail_on", None):
+        threshold = SEVERITY_BY_NAME[args.fail_on]
+        if any(f.severity >= threshold for f in report.findings):
+            return 2
+    return 0
+
+
+def _print_tool_terminal(report) -> None:
+    try:
+        from rich.console import Console
+        from rich.table import Table as RichTable
+    except ImportError:
+        print(f"\n{report.tool_name} — {report.target}  [{report.status}]")
+        for f in report.sorted_findings:
+            print(f"  [{f.severity.label.upper()}] {f.title}")
+        return
+    console = Console()
+    console.print()
+    console.rule(f"[bold]{report.tool_name}[/] · {report.target}")
+    style = SEVERITY_STYLE[report.overall_risk]
+    console.print(f"  Overall risk: [{style}]{report.overall_risk.label}[/]  "
+                  f"· {len(report.findings)} findings · {report.duration_seconds}s\n")
+    for section in report.sections:
+        if section.table and section.table.rows:
+            table = RichTable(title=section.title, title_justify="left", header_style="bold",
+                              show_lines=False)
+            for column in section.table.columns:
+                table.add_column(column)
+            for row in section.table.rows[:40]:
+                table.add_row(*[str(c)[:80] for c in row])
+            console.print(table)
+        elif section.kv:
+            console.print(f"[bold]{section.title}[/]")
+            for k, v in section.kv:
+                console.print(f"  {k}: {v}")
+        console.print()
+    if report.findings:
+        table = RichTable(title="Findings", title_justify="left", header_style="bold")
+        table.add_column("Risk", no_wrap=True)
+        table.add_column("Finding")
+        for f in report.sorted_findings:
+            table.add_row(f"[{SEVERITY_STYLE[f.severity]}]{f.severity.label}[/]", f.title)
+        console.print(table)
+    for error in report.errors:
+        console.print(f"  [yellow]note:[/] {error}")
+    console.print()
+
+
 def cmd_serve(args: argparse.Namespace) -> int:
     try:
         import uvicorn
     except ImportError:
-        print("The web UI needs uvicorn and fastapi:\n  pip install 'webscan-light[web]'",
+        print("The web UI needs starlette and uvicorn:\n  pip install 'webscan-light[web]'",
               file=sys.stderr)
         return 1
+    reload = args.reload
+    if reload:
+        try:
+            import watchfiles  # noqa: F401
+        except ImportError:
+            print("note: --reload needs watchfiles (pip install watchfiles); starting without it",
+                  file=sys.stderr)
+            reload = False
+    import os
+    exposed = args.host not in ("127.0.0.1", "localhost", "::1")
+    if exposed and not os.environ.get("WEBSCAN_TOKEN", "").strip():
+        print("WARNING: binding to a non-loopback address without WEBSCAN_TOKEN set.\n"
+              "         Anyone who can reach this port can drive scans from your server.\n"
+              "         Set WEBSCAN_TOKEN=<secret> to require authentication.", file=sys.stderr)
+    if exposed and os.environ.get("WEBSCAN_ALLOW_PRIVATE", "").lower() in ("1", "true", "yes", "on"):
+        print("WARNING: WEBSCAN_ALLOW_PRIVATE is on and the server is exposed — targets may "
+              "include your internal network.", file=sys.stderr)
     print(f"webscan-light UI -> http://{args.host}:{args.port}")
     uvicorn.run("webscan.web.app:app", host=args.host, port=args.port,
-                reload=args.reload, log_level="info")
+                reload=reload, log_level="info")
     return 0
 
 
@@ -139,6 +433,7 @@ def cmd_scan(args: argparse.Namespace) -> int:
         verify_tls=not args.insecure,
         offline=args.offline,
         min_cvss=args.min_cvss,
+        delay=args.delay,
         user_agent=args.user_agent,
         extra_headers=_parse_headers(args.header),
         only=[i.strip() for i in args.only.split(",") if i.strip()],
@@ -154,6 +449,12 @@ def cmd_scan(args: argparse.Namespace) -> int:
     finally:
         if progress:
             progress("done", 0, 0)
+
+    try:
+        from webscan.core import history
+        history.record(result)
+    except Exception:  # noqa: BLE001
+        pass  # nosec B110: history persistence is best-effort
 
     _emit(result, args)
 
@@ -230,10 +531,10 @@ def _emit(result: ScanResult, args: argparse.Namespace) -> None:
 
 
 def _open(path: Path) -> None:
-    import subprocess
+    import subprocess  # nosec B404: opener with a fixed argv list (no shell)
     opener = {"darwin": "open", "win32": "start"}.get(sys.platform, "xdg-open")
     try:
-        subprocess.run([opener, str(path)], check=False,
+        subprocess.run([opener, str(path)], check=False,  # nosec B603: fixed argv, no shell
                        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     except FileNotFoundError:
         pass
@@ -318,6 +619,20 @@ def main(argv: list[str] | None = None) -> int:
         return cmd_serve(args)
     if args.command == "list-tests":
         return cmd_list_tests()
+    if args.command == "tools":
+        return cmd_tools()
+    if args.command == "run":
+        return cmd_run(args)
+    if args.command == "update":
+        return cmd_update(args)
+    if args.command == "history":
+        return cmd_history(args)
+    if args.command == "schedule":
+        return cmd_schedule(args)
+    if args.command == "schedules":
+        return cmd_schedules(args)
+    if args.command == "scheduler":
+        return cmd_scheduler(args)
     return 1
 
 

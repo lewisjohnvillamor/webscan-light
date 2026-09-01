@@ -1,10 +1,13 @@
 {% extends "base.html" %}
-{% block title %}Scan failed{% endblock %}
+{% block title %}Scan {{ job.state }}{% endblock %}
 {% block content %}
-<div class="card">
-  <h2>Scan failed</h2>
+<div class="card pad">
+  <h2>{{ job.tool_name }} — {{ job.state }}</h2>
   <p><strong>{{ job.target }}</strong></p>
-  <p style="color:var(--muted)">{{ job.error }}</p>
-  <div style="margin-top:16px"><a class="btn" href="/">Try another target</a></div>
+  <div class="notice {{ 'warn' if job.state=='blocked' else '' }}" style="margin-top:12px">{{ job.error }}</div>
+  <div class="actions" style="margin-top:16px">
+    <a class="btn" href="/tool/{{ job.tool_id }}">Try again</a>
+    <a class="btn secondary" href="/">All tools</a>
+  </div>
 </div>
 {% endblock %}

@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ report.tool_name }} Report — {{ report.target }}</title>
+{% include "_styles.html.j2" %}
+</head>
+<body>
+<div class="sheet">
+
+  <header class="masthead">
+    <span class="code">{{ glyph }}</span>
+    <h1>{{ report.tool_name }}</h1>
+    <span class="spacer"></span>
+    <span class="scan-type-pill">{{ report.status }}</span>
+    <div class="sub">Target: <a href="{{ report.target }}">{{ report.target }}</a></div>
+  </header>
+
+  {% set risk = report.overall_risk.label %}
+  <section class="block hero">
+    <div class="card risk-card" style="--risk-color:var({{ severity_vars[risk] }})">
+      <div class="eyebrow">Overall risk level</div>
+      <div class="risk-word">{{ risk }}</div>
+      <div class="risk-meta">
+        <b>{{ charts.total_findings }}</b> finding{{ '' if charts.total_findings == 1 else 's' }}
+        · <b>{{ charts.confirmed }}</b> confirmed
+      </div>
+    </div>
+    <div class="card gauges-card">
+      <div class="gauge-row">
+        {% for gauge in charts.gauges %}{{ gauge }}{% endfor %}
+      </div>
+      {{ charts.stack }}
+    </div>
+  </section>
+
+  <section class="block tiles">
+    <div class="tile"><div class="k">Start time</div><div class="v small">{{ report.start_time|localtime }}</div></div>
+    <div class="tile"><div class="k">Finish time</div><div class="v small">{{ report.finish_time|localtime }}</div></div>
+    <div class="tile"><div class="k">Duration</div><div class="v">{{ report.duration_seconds }}<span style="font-size:13px;font-weight:500;color:var(--muted)"> sec</span></div></div>
+    <div class="tile"><div class="k">Findings</div><div class="v">{{ charts.total_findings }}</div></div>
+    {% for label, value in report.stats %}
+    <div class="tile"><div class="k">{{ label }}</div><div class="v small">{{ value }}</div></div>
+    {% endfor %}
+  </section>
+
+  {% if report.findings %}
+  <h2 class="section">Findings</h2>
+  <p class="section-hint">{{ charts.total_findings }} findings, highest severity first.</p>
+  {% for finding in report.sorted_findings %}
+  <article class="finding" style="--sev-color:var({{ severity_vars[finding.severity.label] }});--sev-bg:var({{ severity_vars[finding.severity.label] }}-bg)">
+    <div class="finding-head">
+      <span class="sev-chip">{{ finding.severity.label }}</span>
+      <h3 class="finding-title">{{ finding.title }}</h3>
+      <span class="badge {{ 'confirmed' if finding.confidence.value == 'CONFIRMED' else '' }}">{{ finding.confidence.value }}</span>
+    </div>
+    {% if finding.port %}<p class="port">port {{ finding.port }}</p>{% endif %}
+    <div class="finding-body">
+      {% if finding.table and finding.table.rows %}
+      <div class="table-scroll">
+        <table class="data">
+          <thead><tr>{% for column in finding.table.columns %}<th>{{ column }}</th>{% endfor %}</tr></thead>
+          <tbody>
+            {% for row in finding.table.rows %}
+            <tr>{% for cell in row %}<td{% if finding.table.columns[loop.index0] in numeric_columns %} class="num"{% endif %}>{{ cell|linkify }}</td>{% endfor %}</tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% endif %}
+      {% if finding.risk_description or finding.recommendation or finding.references or finding.classification.as_rows() %}
+      <details class="details" open>
+        <summary>Details, recommendation &amp; classification</summary>
+        <div class="details-body">
+          {% if finding.risk_description %}<div class="field-label">Risk description</div><p>{{ finding.risk_description }}</p>{% endif %}
+          {% if finding.recommendation %}<div class="field-label">Recommendation</div><p>{{ finding.recommendation }}</p>{% endif %}
+          {% if finding.references %}<div class="field-label">References</div><ul>{% for reference in finding.references %}<li><a href="{{ reference }}">{{ reference }}</a></li>{% endfor %}</ul>{% endif %}
+          {% if finding.classification.as_rows() %}<div class="field-label">Classification</div>
+          <dl class="classification">{% for label, value in finding.classification.as_rows() %}<dt>{{ label }}</dt><dd>{{ value }}</dd>{% endfor %}</dl>{% endif %}
+          {% if include_exchanges and finding.request_response %}<div class="field-label">Request / Response</div><pre class="exchange">{{ finding.request_response }}</pre>{% endif %}
+        </div>
+      </details>
+      {% endif %}
+    </div>
+  </article>
+  {% endfor %}
+  {% endif %}
+
+  {% for section in report.sections %}
+  <h2 class="section">{{ section.title }}</h2>
+  {% if section.intro %}<p class="section-hint">{{ section.intro }}</p>{% endif %}
+  {% if section.kv %}
+  <div class="card panel-card">
+    <dl class="kv">{% for label, value in section.kv %}<dt>{{ label }}</dt><dd style="font-variant-numeric:normal">{{ value|linkify }}</dd>{% endfor %}</dl>
+  </div>
+  {% endif %}
+  {% if section.table and section.table.rows %}
+  <div class="card" style="padding:6px">
+    <div class="table-scroll" style="border:0">
+      <table class="data">
+        <thead><tr>{% for column in section.table.columns %}<th>{{ column }}</th>{% endfor %}</tr></thead>
+        <tbody>
+          {% for row in section.table.rows %}
+          <tr>{% for cell in row %}<td{% if section.table.columns[loop.index0] in numeric_columns %} class="num"{% endif %}>{{ cell|linkify }}</td>{% endfor %}</tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+  {% if section.body %}<div class="card panel-card"><pre class="exchange" style="border:0;background:none;padding:0">{{ section.body }}</pre></div>{% endif %}
+  {% endfor %}
+
+  {% if report.params %}
+  <h2 class="section">Scan parameters</h2>
+  <div class="card panel-card">
+    <dl class="kv">{% for label, value in report.params %}<dt>{{ label }}</dt><dd style="font-variant-numeric:normal">{{ value }}</dd>{% endfor %}</dl>
+  </div>
+  {% endif %}
+
+  {% if report.errors %}
+  <div class="errors" style="margin-top:20px">
+    <strong>Scan notes</strong>
+    <ul style="margin:6px 0 0;padding-left:18px">{% for error in report.errors %}<li>{{ error }}</li>{% endfor %}</ul>
+  </div>
+  {% endif %}
+
+  <footer>
+    <span>Generated by webscan-light v{{ version }} · {{ report.tool_name }}</span>
+    <span>{{ generated_at|localtime }}</span>
+  </footer>
+</div>
+</body>
+</html>

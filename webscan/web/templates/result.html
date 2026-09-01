@@ -2,39 +2,48 @@
 {% block title %}Report — {{ job.target }}{% endblock %}
 {% block head %}
 <style>
-  .summary { display:flex; gap:26px; flex-wrap:wrap; align-items:center; }
-  .risk { font-size:30px; font-weight:700; line-height:1.1; }
-  .counts { display:flex; gap:16px; flex-wrap:wrap; font-size:13px; }
-  .counts b { font-variant-numeric:tabular-nums; }
-  .actions { display:flex; gap:10px; flex-wrap:wrap; margin-top:18px; }
-  iframe.report { width:100%; height:78vh; border:1px solid var(--line);
-                  border-radius:10px; background:#fff; }
+  .summary{display:flex;gap:26px;flex-wrap:wrap;align-items:center}
+  .risk{font-size:30px;font-weight:800;line-height:1}
+  .counts{display:flex;gap:15px;flex-wrap:wrap;font-size:13px}
+  .counts b{font-variant-numeric:tabular-nums}
+  .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
+  iframe.report{width:100%;height:80vh;border:1px solid var(--line);border-radius:var(--radius);
+    background:#fff;margin-top:18px}
 </style>
 {% endblock %}
 {% block content %}
-<div class="card">
-  <h2>{{ job.target }}</h2>
+<div class="card pad">
+  <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:14px">
+    <h2 style="margin:0">{{ job.tool_name }}</h2><span class="hint">{{ job.target }}</span>
+  </div>
+  {% if cached %}<div class="notice" style="margin-bottom:14px">Showing a recent cached result to avoid re-scanning. <a href="/tool/{{ job.tool_id }}">Run a fresh scan</a> (tick “Force fresh scan”).</div>{% endif %}
   <div class="summary">
     <div>
-      <div style="color:var(--muted);font-size:12px">Overall risk level</div>
+      <div style="color:var(--muted);font-size:12px">Overall risk</div>
       <div class="risk sev-{{ job.summary.overall_risk|lower }}">{{ job.summary.overall_risk }}</div>
     </div>
     <div class="counts">
-      {% for name, count in job.summary.rating_counts.items() %}
+      {% for name,count in job.summary.rating_counts.items() %}
       <span class="sev-{{ name|lower }}">{{ name }} <b>{{ count }}</b></span>
       {% endfor %}
     </div>
-    <div style="color:var(--muted);font-size:13px">
-      {{ job.summary.findings }} findings · {{ job.summary.duration_seconds }} sec
-    </div>
+    <div style="color:var(--muted);font-size:13px">{{ job.summary.findings }} findings · {{ job.summary.duration_seconds }}s</div>
   </div>
   <div class="actions">
-    <a class="btn" href="/scan/{{ job.id }}/report.html" target="_blank">Open full report</a>
-    {% if pdf_available %}<a class="btn secondary" href="/scan/{{ job.id }}/report.pdf">Download PDF</a>{% endif %}
-    <a class="btn secondary" href="/scan/{{ job.id }}/report.json">JSON</a>
-    <a class="btn secondary" href="/scan/{{ job.id }}/report.sarif">SARIF</a>
-    <a class="btn secondary" href="/">New scan</a>
+    <a class="btn" href="/report/{{ job.id }}" target="_blank">Open full report ↗</a>
+    {% if pdf_available %}<a class="btn secondary" href="/report/{{ job.id }}.pdf">Download PDF</a>{% endif %}
+    <a class="btn secondary" href="/report/{{ job.id }}.json">JSON</a>
+    {% if is_website %}<a class="btn secondary" href="/report/{{ job.id }}.sarif">SARIF</a>
+    <a class="btn secondary" href="/report/{{ job.id }}/compliance" target="_blank">Compliance</a>{% endif %}
+    <a class="btn secondary" href="/tool/{{ job.tool_id }}">Run again</a>
+    {% if job.tool_id in ["asm","website","subdomains"] %}
+    <form method="post" action="/schedules/monitor" style="display:inline">
+      <input type="hidden" name="target" value="{{ job.target }}">
+      <button type="submit" class="btn secondary">Monitor this domain</button>
+    </form>
+    {% endif %}
+    <a class="btn secondary" href="/">All tools</a>
   </div>
 </div>
-<iframe class="report" src="/scan/{{ job.id }}/report.html" title="Scan report"></iframe>
+<iframe class="report" src="/report/{{ job.id }}" title="Report"></iframe>
 {% endblock %}

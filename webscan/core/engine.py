@@ -3,9 +3,9 @@ from __future__ import annotations
 
 import concurrent.futures
 import logging
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Callable
 
 from webscan.intel.feeds import Intel
 
@@ -31,6 +31,7 @@ class ScanOptions:
     verify_tls: bool = True
     offline: bool = False
     min_cvss: float = 0.0
+    delay: float = 0.0
     user_agent: str | None = None
     extra_headers: dict[str, str] = field(default_factory=dict)
     only: list[str] = field(default_factory=list)
@@ -46,6 +47,7 @@ def run_scan(options: ScanOptions, progress: ProgressHook | None = None) -> Scan
         "timeout": options.timeout,
         "verify_tls": options.verify_tls,
         "extra_headers": options.extra_headers,
+        "delay": options.delay,
     }
     if options.user_agent:
         client_kwargs["user_agent"] = options.user_agent

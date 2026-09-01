@@ -218,8 +218,8 @@ SENSITIVE_PATTERNS = [
     (re.compile(r"sk_live_[0-9a-zA-Z]{24,}"), "Stripe live secret key"),
     (re.compile(r"xox[baprs]-[0-9A-Za-z\-]{10,}"), "Slack token"),
     (re.compile(r"eyJ[A-Za-z0-9_\-]{10,}\.eyJ[A-Za-z0-9_\-]{10,}\.[A-Za-z0-9_\-]{10,}"), "JSON Web Token"),
-    (re.compile(r"(?i)\b(mysql|postgres(?:ql)?|mongodb(?:\+srv)?)://[^\s:@/]+:[^\s:@/]+@"), "Database connection string with credentials"),
-    (re.compile(r"(?i)\b(?:api[_\-]?key|secret|passwd|password)['\"]?\s*[:=]\s*['\"][^'\"\s]{8,}['\"]"), "Hard-coded credential"),
+    (re.compile(r"(?i)\b(mysql|postgres(?:ql)?|mongodb(?:\+srv)?)://[^\s:@/]+:[^\s:@/]+@"), "Database connection string with credentials"),  # noqa: E501
+    (re.compile(r"(?i)\b(?:api[_\-]?key|secret|passwd|password)['\"]?\s*[:=]\s*['\"][^'\"\s]{8,}['\"]"), "Hard-coded credential"),  # noqa: E501
     (re.compile(r"\b\d{3}-\d{2}-\d{4}\b"), "US Social Security Number pattern"),
 ]
 

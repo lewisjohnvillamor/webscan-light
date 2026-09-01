@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}Scheduled scans — webscan-light{% endblock %}
+{% block content %}
+<div class="card pad" style="margin-bottom:16px">
+  <h2>Monitor a domain</h2>
+  <p class="hint" style="margin-top:0">One click sets up a daily Attack Surface Monitor and alerts you when your exposure changes (new subdomain, new open port, new finding).</p>
+  <form method="post" action="/schedules/monitor" style="display:flex;gap:10px;flex-wrap:wrap;align-items:end;margin-top:12px">
+    <div class="field" style="flex:1;min-width:240px;margin:0">
+      <label for="mon">Domain</label>
+      <input type="text" id="mon" name="target" placeholder="example.com" required>
+    </div>
+    <button type="submit">Monitor this domain →</button>
+  </form>
+</div>
+
+<div class="card pad" style="margin-bottom:20px">
+  <h2>Custom schedule</h2>
+  <p class="hint" style="margin-top:0">Run a scan on a repeating interval. You are alerted only when a scan surfaces a <strong>new</strong> finding compared to its previous run.</p>
+  {% if channels %}
+  <div class="notice" style="margin-top:12px">Alerts will be sent via: <strong>{{ channels|join(', ') }}</strong>.</div>
+  {% else %}
+  <div class="notice warn" style="margin-top:12px">No alert channel configured. Set <code>WEBSCAN_WEBHOOK_URL</code> or SMTP env vars to receive alerts; scans still run and are stored in History.</div>
+  {% endif %}
+  <form method="post" action="/schedules" style="margin-top:14px">
+    <div class="row">
+      <div class="field">
+        <label for="tool_id">Tool</label>
+        <select id="tool_id" name="tool_id" style="width:100%;padding:11px 13px;font:14px var(--sans);color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:9px">
+          {% for c in cards %}<option value="{{ c.id }}">{{ c.name }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="field">
+        <label for="target">Target</label>
+        <input type="text" id="target" name="target" placeholder="example.com" required>
+      </div>
+      <div class="field">
+        <label for="every">Every</label>
+        <input type="text" id="every" name="every" value="1d" placeholder="1d, 12h, 30m">
+      </div>
+    </div>
+    <div class="checks"><label><input type="checkbox" name="authorized" value="true"> I am authorised (required for active tools)</label></div>
+    <button type="submit">Add schedule</button>
+  </form>
+</div>
+
+{% if schedules %}
+<div class="card pad">
+  <table class="list">
+    <thead><tr><th>Tool</th><th>Target</th><th>Every</th><th>Last run</th><th>Next run</th><th></th></tr></thead>
+    <tbody>
+      {% for s in schedules %}
+      <tr>
+        <td>{{ s.tool_name }}</td>
+        <td>{{ s.target }}</td>
+        <td style="font-family:var(--mono);font-size:12px">{{ (s.interval_seconds // 3600) }}h{{ ((s.interval_seconds % 3600)//60) if (s.interval_seconds % 3600) else '' }}{{ 'm' if (s.interval_seconds % 3600) else '' }}</td>
+        <td style="font-family:var(--mono);font-size:12px;color:var(--muted)">{{ (s.last_run or '—')[:16]|replace("T"," ") }}</td>
+        <td style="font-family:var(--mono);font-size:12px;color:var(--muted)">{{ (s.next_run or '—')[:16]|replace("T"," ") }}</td>
+        <td style="white-space:nowrap">
+          {% if s.last_scan_id %}<a href="/report/{{ s.last_scan_id }}" target="_blank">last report</a> · {% endif %}
+          <form method="post" action="/schedules/{{ s.id }}/run" style="display:inline"><button type="submit" class="btn secondary" style="padding:4px 10px;font-size:12px">Run now</button></form>
+          <form method="post" action="/schedules/{{ s.id }}/delete" style="display:inline"><button type="submit" class="btn secondary" style="padding:4px 10px;font-size:12px">Delete</button></form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="notice">No schedules yet. Add one above.</div>
+{% endif %}
+{% endblock %}

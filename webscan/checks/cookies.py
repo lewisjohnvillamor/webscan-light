@@ -41,8 +41,13 @@ def _parse_cookie(raw: str, source_url: str) -> Cookie | None:
 
 def collect_cookies(context: ScanContext) -> list[Cookie]:
     """Parse every Set-Cookie seen during the crawl (cached on the context)."""
-    if "cookies" in context.shared:
-        return context.shared["cookies"]
+    cached = context.shared.get("cookies")
+    if cached is not None:
+        return cached
+    return context.cached("cookies", lambda: _collect(context))
+
+
+def _collect(context: ScanContext) -> list[Cookie]:
     cookies: list[Cookie] = []
     seen: set[str] = set()
     for page in context.crawl.pages:
@@ -51,7 +56,6 @@ def collect_cookies(context: ScanContext) -> list[Cookie]:
             if cookie and cookie.name not in seen:
                 seen.add(cookie.name)
                 cookies.append(cookie)
-    context.shared["cookies"] = cookies
     return cookies
 
 

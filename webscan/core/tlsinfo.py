@@ -61,7 +61,7 @@ def inspect(url: str, timeout: float = 10.0) -> dict[str, Any]:
 def _fill_untrusted(info: dict[str, Any], host: str, port: int, timeout: float) -> None:
     """Re-connect without verification so an untrusted cert can still be described."""
     try:
-        context = ssl._create_unverified_context()
+        context = ssl._create_unverified_context()  # nosec B323: a TLS scanner must inspect untrusted/invalid certs
         with socket.create_connection((host, port), timeout=timeout) as sock:
             with context.wrap_socket(sock, server_hostname=host) as tls_sock:
                 info["protocol"] = tls_sock.version()
@@ -69,7 +69,7 @@ def _fill_untrusted(info: dict[str, Any], host: str, port: int, timeout: float) 
                 if der:
                     info["cert_der_len"] = len(der)
     except Exception:  # noqa: BLE001 - best effort only
-        pass
+        pass  # nosec B110: describing an untrusted cert is best-effort
 
 
 def _flatten_name(name: tuple) -> str:
