@@ -296,12 +296,20 @@ def cmd_serve(args: argparse.Namespace) -> int:
     try:
         import uvicorn
     except ImportError:
-        print("The web UI needs uvicorn and fastapi:\n  pip install 'webscan-light[web]'",
+        print("The web UI needs starlette and uvicorn:\n  pip install 'webscan-light[web]'",
               file=sys.stderr)
         return 1
+    reload = args.reload
+    if reload:
+        try:
+            import watchfiles  # noqa: F401
+        except ImportError:
+            print("note: --reload needs watchfiles (pip install watchfiles); starting without it",
+                  file=sys.stderr)
+            reload = False
     print(f"webscan-light UI -> http://{args.host}:{args.port}")
     uvicorn.run("webscan.web.app:app", host=args.host, port=args.port,
-                reload=args.reload, log_level="info")
+                reload=reload, log_level="info")
     return 0
 
 

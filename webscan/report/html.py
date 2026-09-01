@@ -50,7 +50,13 @@ def _localtime(value: datetime | None) -> str:
     return f"{local.strftime('%b %d, %Y / %H:%M:%S')} {pretty_offset}"
 
 
+_ENV: Environment | None = None
+
+
 def _environment() -> Environment:
+    global _ENV
+    if _ENV is not None:
+        return _ENV
     env = Environment(
         loader=FileSystemLoader(str(TEMPLATE_DIR)),
         autoescape=True,
@@ -59,6 +65,7 @@ def _environment() -> Environment:
     )
     env.filters["linkify"] = _linkify
     env.filters["localtime"] = _localtime
+    _ENV = env
     return env
 
 

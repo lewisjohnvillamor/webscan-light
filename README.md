@@ -111,10 +111,17 @@ SSRF, webhook checks). Create a unique URL in the UI, point payloads at
 ```bash
 git clone https://github.com/lewisjohnvillamor/webscan-light.git
 cd webscan-light
-pip install -e ".[web]"       # or: pip install -e .   (CLI only)
+
+pip install -e .              # core: CLI scanning only (~4 MB of deps)
+pip install -e ".[cli]"      # + rich terminal output
+pip install -e ".[web]"      # + local web UI (Starlette + uvicorn)
+pip install -e ".[all]"      # everything
 ```
 
-Python 3.10+. No API keys required.
+Python 3.10+. No API keys required. The **core install needs only `requests`,
+`beautifulsoup4` and `jinja2`** — no pydantic, no uvloop. `rich` and the web
+stack are optional extras, so a headless/CI install stays tiny and the terminal
+output degrades to plain text when `rich` is absent.
 
 ## CLI
 

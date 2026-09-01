@@ -12,7 +12,7 @@ ENV WEBSCAN_CHROME=/usr/bin/chromium \
 WORKDIR /app
 COPY pyproject.toml README.md ./
 COPY webscan ./webscan
-RUN pip install --no-cache-dir ".[web]"
+RUN pip install --no-cache-dir ".[web,cli]"
 
 RUN useradd --create-home --uid 10001 scanner \
  && mkdir -p /cache && chown scanner /cache

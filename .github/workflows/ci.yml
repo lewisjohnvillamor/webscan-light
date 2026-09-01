@@ -19,7 +19,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
           cache: pip
       - name: Install
-        run: pip install -e ".[web,dev]"
+        run: pip install -e ".[web,cli,dev]"
       - name: Test
         run: pytest -q
       - name: Smoke-test the CLI
