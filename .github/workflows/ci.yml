@@ -26,3 +26,4 @@ jobs:
         run: |
           webscan --version
           test "$(webscan list-tests | head -1)" = "webscan-light performs 40 tests:"
+          webscan tools | grep -q "SSL/TLS Scanner"

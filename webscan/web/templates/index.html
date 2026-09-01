@@ -1,66 +1,45 @@
 {% extends "base.html" %}
 {% block content %}
-<form class="card" method="post" action="/scan">
-  <h2>Scan a website</h2>
-  <div class="field">
-    <label for="target">Target URL or hostname</label>
-    <input type="text" id="target" name="target" placeholder="example.com" required autofocus>
-  </div>
-  <div class="row">
-    <div class="field">
-      <label for="max_pages">Pages to crawl</label>
-      <input type="number" id="max_pages" name="max_pages" value="15" min="1" max="100">
-    </div>
-    <div class="field">
-      <label for="max_depth">Crawl depth</label>
-      <input type="number" id="max_depth" name="max_depth" value="2" min="0" max="4">
-    </div>
-    <div class="field">
-      <label for="min_cvss">Minimum CVSS</label>
-      <input type="number" id="min_cvss" name="min_cvss" value="0" min="0" max="10" step="0.1">
-    </div>
-  </div>
-  <div class="checks">
-    <label><input type="checkbox" name="offline" value="true"> Offline (cached CVE data only)</label>
-    <label><input type="checkbox" name="insecure" value="true"> Skip TLS verification</label>
-  </div>
-  <button type="submit">Start scan</button>
-  <p class="hint">
-    Runs {{ tests|length }} passive and configuration tests. Only scan systems you own or
-    have written permission to test.
-  </p>
-</form>
+<div class="card pad" style="margin-bottom:22px">
+  <h2>Security testing tools</h2>
+  <p class="hint" style="margin-top:0">Pick a tool to scan a target. Reports render inline and download as HTML, PDF or JSON. Only scan systems you own or are authorised to test.</p>
+</div>
+
+{% for category in categories %}
+{% set group = cards|selectattr("category","equalto",category)|list %}
+{% if group %}
+<div class="eyebrow">{{ category }}</div>
+<div class="grid">
+  {% for card in group %}
+  <a class="card toolcard" href="/tool/{{ card.id }}">
+    {% if card.active %}<span class="flag">ACTIVE</span>{% endif %}
+    <div class="ico">{{ card.glyph }}</div>
+    <div class="nm">{{ card.name }}</div>
+    <div class="ds">{{ card.description }}</div>
+  </a>
+  {% endfor %}
+</div>
+{% endif %}
+{% endfor %}
 
 {% if recent %}
-<div class="card">
-  <h2>Recent scans</h2>
+<div class="eyebrow">Recent scans</div>
+<div class="card pad">
   <table class="list">
-    <thead><tr><th>Target</th><th>Status</th><th>Risk</th><th>Findings</th><th></th></tr></thead>
+    <thead><tr><th>Tool</th><th>Target</th><th>Status</th><th>Risk</th><th>Findings</th><th></th></tr></thead>
     <tbody>
       {% for job in recent %}
       <tr>
+        <td>{{ job.tool_name }}</td>
         <td>{{ job.target }}</td>
         <td>{{ job.state }}</td>
-        <td>
-          {% if job.summary %}
-            <span class="sev sev-{{ job.summary.overall_risk|lower }}">{{ job.summary.overall_risk }}</span>
-          {% else %}—{% endif %}
-        </td>
+        <td>{% if job.summary %}<span class="sev-{{ job.summary.overall_risk|lower }}" style="font-weight:700">{{ job.summary.overall_risk }}</span>{% else %}—{% endif %}</td>
         <td>{% if job.summary %}{{ job.summary.findings }}{% else %}—{% endif %}</td>
-        <td><a href="/scan/{{ job.id }}">open</a></td>
+        <td><a href="/job/{{ job.id }}">open</a></td>
       </tr>
       {% endfor %}
     </tbody>
   </table>
 </div>
 {% endif %}
-
-<div class="card">
-  <details class="tests">
-    <summary>{{ tests|length }} tests performed on every scan</summary>
-    <ul class="testlist">
-      {% for test in tests %}<li>{{ test.description }}</li>{% endfor %}
-    </ul>
-  </details>
-</div>
 {% endblock %}

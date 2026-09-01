@@ -2,42 +2,35 @@
 {% block title %}Scanning {{ job.target }}{% endblock %}
 {% block head %}
 <style>
-  .bar { height:9px; background:var(--line); border-radius:99px; overflow:hidden; margin:16px 0 10px; }
-  .bar > div { height:100%; width:5%; background:var(--accent); border-radius:99px;
-               transition:width .35s ease; }
-  .stage { color:var(--muted); font-size:13px; font-variant-numeric:tabular-nums; }
+  .bar{height:9px;background:var(--track);border-radius:99px;overflow:hidden;margin:18px 0 10px}
+  .bar>div{height:100%;width:5%;background:var(--accent);border-radius:99px;transition:width .4s ease}
+  .stage{color:var(--muted);font-size:13px;font-variant-numeric:tabular-nums}
+  .spin{display:inline-block;width:14px;height:14px;border:2px solid var(--track);
+    border-top-color:var(--accent);border-radius:50%;animation:sp 1s linear infinite;margin-right:8px;vertical-align:-2px}
+  @keyframes sp{to{transform:rotate(360deg)}}
 </style>
 {% endblock %}
 {% block content %}
-<div class="card">
-  <h2>Scanning {{ job.target }}</h2>
+<div class="card pad">
+  <h2><span class="spin"></span>{{ job.tool_name }} · {{ job.target }}</h2>
   <div class="bar"><div id="fill"></div></div>
   <div class="stage" id="stage">Starting…</div>
-  <p class="hint">This page refreshes itself; the report opens automatically when the scan finishes.</p>
+  <p class="hint">This page refreshes automatically and opens the report when the scan finishes.</p>
 </div>
 {% endblock %}
 {% block scripts %}
 <script>
-  const id = {{ job.id|tojson }};
-  const fill = document.getElementById('fill');
-  const stage = document.getElementById('stage');
-  async function poll() {
-    try {
-      const response = await fetch(`/api/scan/${id}`);
-      if (!response.ok) throw new Error(response.status);
-      const job = await response.json();
-      fill.style.width = job.percent + '%';
-      stage.textContent = job.total
-        ? `${job.done} of ${job.total} checks complete`
-        : (job.stage || 'Working') + '…';
-      if (job.state === 'finished' || job.state === 'failed') {
-        location.reload();
-        return;
-      }
-    } catch (error) {
-      stage.textContent = 'Lost contact with the scanner — retrying…';
-    }
-    setTimeout(poll, 900);
+  const id={{ job.id|tojson }};
+  const fill=document.getElementById('fill'), stage=document.getElementById('stage');
+  async function poll(){
+    try{
+      const r=await fetch(`/api/job/${id}`); if(!r.ok) throw 0;
+      const j=await r.json();
+      fill.style.width=j.percent+'%';
+      stage.textContent=j.total?`${j.done} of ${j.total} checks complete`:(j.stage||'Working')+'…';
+      if(['finished','failed','blocked'].includes(j.state)){location.reload();return;}
+    }catch(e){stage.textContent='Reconnecting…';}
+    setTimeout(poll,900);
   }
   poll();
 </script>

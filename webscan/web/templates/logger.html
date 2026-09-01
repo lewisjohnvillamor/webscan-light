@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}HTTP Request Logger{% endblock %}
+{% block content %}
+<div class="card pad" style="margin-bottom:20px">
+  <h2>HTTP Request Logger</h2>
+  <p class="hint" style="margin-top:0">Create a unique URL and point payloads at it to catch out-of-band callbacks — blind XSS, SSRF, webhook and redirect testing. Any request that hits your URL is recorded here.</p>
+  <form method="post" action="/logger" style="display:flex;gap:10px;flex-wrap:wrap;align-items:end;margin-top:12px">
+    <div class="field" style="flex:1;min-width:220px;margin:0">
+      <label for="label">Label (optional)</label>
+      <input type="text" id="label" name="label" placeholder="e.g. blind-xss on contact form">
+    </div>
+    <button type="submit">Create logger URL</button>
+  </form>
+</div>
+
+{% if tokens %}
+<div class="eyebrow">Your logger URLs</div>
+<div class="card pad">
+  <table class="list">
+    <thead><tr><th>Label</th><th>Token</th><th>Requests</th><th></th></tr></thead>
+    <tbody>
+      {% for t in tokens %}
+      <tr>
+        <td>{{ t.label or "—" }}</td>
+        <td><code>{{ t.token }}</code></td>
+        <td>{{ t.requests|length }}</td>
+        <td><a href="/logger/view/{{ t.token }}">view</a></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="notice">No logger URLs yet. Create one above.</div>
+{% endif %}
+{% endblock %}

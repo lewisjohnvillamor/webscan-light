@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}{{ card.name }} — webscan-light{% endblock %}
+{% block content %}
+{% set needs_ports = card.id in ["ports","network"] %}
+{% set needs_wordlist = card.id in ["urlfuzzer","subdomains","vhosts","takeover"] %}
+{% set is_active = card.active %}
+<form class="card pad" method="post" action="/tool/{{ card.id }}">
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+    <div class="ico" style="width:44px;height:44px;border-radius:12px;display:grid;place-items:center;font-size:22px;background:var(--accent-soft)">{{ card.glyph }}</div>
+    <div>
+      <h2 style="margin:0">{{ card.name }}</h2>
+      <div class="hint" style="margin:2px 0 0">{{ card.description }}</div>
+    </div>
+  </div>
+
+  {% if is_active %}
+  <div class="notice warn">This tool sends active requests to the target. Only run it against systems you own or have explicit written permission to test.</div>
+  {% endif %}
+
+  <div class="field">
+    <label for="target">{{ card.target_hint }}</label>
+    <input type="text" id="target" name="target" placeholder="{{ card.target_hint }}" required autofocus>
+  </div>
+
+  <div class="row">
+    {% if needs_ports %}
+    <div class="field">
+      <label for="ports">Ports</label>
+      <input type="text" id="ports" name="ports" placeholder="top100 | top1000 | 1-1024 | 80,443">
+    </div>
+    {% endif %}
+    {% if needs_wordlist %}
+    <div class="field">
+      <label for="wordlist">Custom wordlist path (optional)</label>
+      <input type="text" id="wordlist" name="wordlist" placeholder="/path/to/wordlist.txt">
+    </div>
+    {% endif %}
+    <div class="field">
+      <label for="max_items">{{ 'Max hosts' if card.id=='network' else 'Max items / pages' }} (0 = default)</label>
+      <input type="number" id="max_items" name="max_items" value="0" min="0" max="5000">
+    </div>
+    <div class="field">
+      <label for="timeout">Timeout (s)</label>
+      <input type="number" id="timeout" name="timeout" value="10" min="1" max="60" step="0.5">
+    </div>
+  </div>
+
+  <div class="checks">
+    <label><input type="checkbox" name="offline" value="true"> Offline (cached data only)</label>
+    <label><input type="checkbox" name="insecure" value="true"> Skip TLS verification</label>
+    {% if card.id == "sqli" %}<label><input type="checkbox" name="time_based" value="true"> Enable time-based probe</label>{% endif %}
+  </div>
+
+  {% if is_active %}
+  <div class="checks">
+    <label style="font-weight:600"><input type="checkbox" name="authorized" value="true" {{ 'required' if card.id in ['xss','sqli'] else '' }}>
+      I am authorised to test this target</label>
+  </div>
+  {% endif %}
+
+  <button type="submit">Start scan →</button>
+  <a class="btn secondary" href="/">Cancel</a>
+</form>
+{% endblock %}

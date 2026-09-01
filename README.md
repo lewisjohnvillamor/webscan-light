@@ -51,6 +51,61 @@ Run `webscan list-tests` for the full list with test ids.
 XSS, command injection, XXE or file-inclusion probing. A clean report is not
 evidence that those classes of flaw are absent.
 
+## The tool suite
+
+Beyond the website scanner, `webscan run <tool> <target>` gives you a full recon
+and testing suite. Run `webscan tools` to list them.
+
+| Tool | id | What it does |
+| --- | --- | --- |
+| Website Recon | `recon` | DNS records, WHOIS/RDAP, HTTP headers and server tech at a glance |
+| SSL/TLS Scanner | `ssl` | Certificate, protocol matrix (TLS 1.0-1.3), weak-cipher and expiry checks |
+| Port Scanner | `ports` | TCP connect scan with service/banner fingerprinting |
+| Network Scanner | `network` | Host discovery + port sweep across a CIDR or range |
+| Subdomain Finder | `subdomains` | crt.sh certificate-transparency + DNS brute force |
+| Virtual Host Finder | `vhosts` | Name-based vhosts served by one IP, via Host-header probing |
+| URL Fuzzer | `urlfuzzer` | Brute-force hidden directories and files |
+| Google Hacking | `dorks` | Generate ready-to-run Google dork queries |
+| Subdomain Takeover | `takeover` | Dangling CNAMEs pointing at unclaimed cloud resources |
+| API Scanner | `api` | OpenAPI/Swagger discovery and GraphQL introspection |
+| XSS Detector | `xss` | Active reflected-XSS probing with a safe PoC *(needs `--authorized`)* |
+| SQLi Detector | `sqli` | Error/boolean/time-based SQLi detection *(needs `--authorized`)* |
+| Sniper | `sniper` | Runs recon + detection tools and aggregates findings into one report |
+
+```bash
+webscan run ssl example.com
+webscan run ports example.com --ports top1000
+webscan run subdomains example.com -f html -o subs.html
+webscan run sqli "https://example.com/item?id=1" --authorized
+webscan run sniper example.com -f pdf -o sniper.pdf
+```
+
+**Active tools send requests to the target.** `xss`, `sqli` and `sniper` are
+gated: they refuse to run without `--authorized` (CLI) or the authorization
+checkbox (web UI). The Sniper aggregator is a discovery-and-detection tool only
+— it never delivers exploit payloads, obtains shells, or reads the target
+filesystem.
+
+### Keeping CVE data current
+
+CVE/EPSS/KEV lookups are cached on disk for 24h, so repeat scans hit no APIs and
+`--offline` works fully. To keep scans both fast *and* current, refresh the cache
+on a schedule instead of during a scan:
+
+```bash
+webscan update --kev                       # refresh the CISA KEV catalog
+webscan update f5:nginx@1.18.0 php:php@8.2  # pre-warm CVEs for your stack
+```
+
+Run it from cron/systemd nightly. NVD is the source of truth and updates
+continuously; if you never refresh you keep working from the last fetch.
+
+### HTTP request logger
+
+`webscan serve` includes a request logger for out-of-band testing (blind XSS,
+SSRF, webhook checks). Create a unique URL in the UI, point payloads at
+`/logger/<token>/...`, and captured requests stream into the page.
+
 ## Install
 
 ```bash
