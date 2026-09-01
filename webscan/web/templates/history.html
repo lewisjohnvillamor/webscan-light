@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Scan history — webscan-light{% endblock %}
+{% block content %}
+<div class="card pad" style="margin-bottom:20px">
+  <h2>Scan history</h2>
+  <p class="hint" style="margin-top:0">Every finished scan is stored locally and can be re-opened or exported.</p>
+  <form method="get" action="/history" style="display:flex;gap:10px;margin-top:12px">
+    <input type="text" name="q" value="{{ q }}" placeholder="Filter by target…" style="max-width:320px">
+    <button type="submit">Filter</button>
+  </form>
+</div>
+
+{% if scans %}
+<div class="card pad">
+  <table class="list">
+    <thead><tr><th>Tool</th><th>Target</th><th>Risk</th><th>Findings</th><th>When</th><th>Report</th></tr></thead>
+    <tbody>
+      {% for s in scans %}
+      <tr>
+        <td>{{ s.tool_name }}</td>
+        <td>{{ s.target }}</td>
+        <td><span class="sev-{{ s.overall_risk|lower }}" style="font-weight:700">{{ s.overall_risk }}</span></td>
+        <td>{{ s.findings_count }}</td>
+        <td style="font-family:var(--mono);font-size:12px;color:var(--muted)">{{ s.created_at[:16]|replace("T"," ") }}</td>
+        <td>
+          <a href="/report/{{ s.id }}" target="_blank">HTML</a> ·
+          <a href="/report/{{ s.id }}.pdf">PDF</a> ·
+          <a href="/report/{{ s.id }}.json">JSON</a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="notice">No stored scans yet{% if q %} matching “{{ q }}”{% endif %}.</div>
+{% endif %}
+{% endblock %}

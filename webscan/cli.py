@@ -107,6 +107,10 @@ def build_parser() -> argparse.ArgumentParser:
                        help="exit 2 if a finding at or above this severity is found")
     run_p.add_argument("-q", "--quiet", action="store_true")
 
+    hist = subparsers.add_parser("history", help="list stored scans")
+    hist.add_argument("query", nargs="?", default="", help="filter by target substring")
+    hist.add_argument("--limit", type=int, default=30, help="rows to show (default: 30)")
+
     update = subparsers.add_parser("update", help="pre-warm the CVE/EPSS/KEV cache")
     update.add_argument("software", nargs="*",
                         help="'vendor:product@version' pairs, e.g. f5:nginx@1.18.0")
@@ -160,6 +164,21 @@ def cmd_tools() -> int:
     return 0
 
 
+def cmd_history(args: argparse.Namespace) -> int:
+    from webscan.core import history
+    rows = history.list_scans(limit=args.limit, target=args.query or None)
+    if not rows:
+        print("No stored scans yet.")
+        return 0
+    print(f"{'DATE':<17} {'RISK':<9} {'FINDINGS':<9} {'TOOL':<20} TARGET")
+    for r in rows:
+        when = (r["created_at"] or "")[:16].replace("T", " ")
+        print(f"{when:<17} {r['overall_risk']:<9} {str(r['findings_count']):<9} "
+              f"{r['tool_name'][:20]:<20} {r['target']}")
+    print(f"\n{len(rows)} scans. Open a full report with 'webscan serve' -> History.")
+    return 0
+
+
 def cmd_update(args: argparse.Namespace) -> int:
     from webscan.intel.feeds import Intel
     intel = Intel()
@@ -207,6 +226,12 @@ def cmd_run(args: argparse.Namespace) -> int:
               "authorised to.", file=sys.stderr)
 
     report = spec.func(args.target, options)
+    if report.status == "Finished":
+        try:
+            from webscan.core import history
+            history.record(report)
+        except Exception:  # noqa: BLE001
+            pass
 
     fmt = args.format
     if fmt == "terminal":
@@ -351,6 +376,12 @@ def cmd_scan(args: argparse.Namespace) -> int:
     finally:
         if progress:
             progress("done", 0, 0)
+
+    try:
+        from webscan.core import history
+        history.record(result)
+    except Exception:  # noqa: BLE001
+        pass
 
     _emit(result, args)
 
@@ -521,6 +552,8 @@ def main(argv: list[str] | None = None) -> int:
         return cmd_run(args)
     if args.command == "update":
         return cmd_update(args)
+    if args.command == "history":
+        return cmd_history(args)
     return 1
 
 

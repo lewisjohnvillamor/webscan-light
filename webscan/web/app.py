@@ -27,7 +27,7 @@ from webscan import __version__
 from webscan.core.engine import ScanOptions
 from webscan.core.http import normalize_target
 from webscan.core.registry import load_checks
-from webscan.core import scope
+from webscan.core import history, scope
 from webscan.report import generic
 from webscan.report import html as html_report
 from webscan.report import jsonout, pdf, sarif
@@ -252,6 +252,51 @@ def _tool_error(request: Request, tool_id: str, message: str):
                                       status_code=400)
 
 
+async def history_page(request: Request):
+    q = request.query_params.get("q", "").strip()
+    scans = history.list_scans(limit=200, target=q or None)
+    return templates.TemplateResponse(request, "history.html",
+                                      {"version": __version__, "scans": scans, "q": q})
+
+
+def _stored_or_404(scan_id: str) -> dict:
+    row = history.get_scan(scan_id)
+    if not row:
+        raise HTTPException(status_code=404, detail="unknown report id")
+    return row
+
+
+async def stored_html(request: Request):
+    row = _stored_or_404(request.path_params["scan_id"])
+    return HTMLResponse(row["html"] or "", headers={"Content-Security-Policy": REPORT_CSP})
+
+
+async def stored_json(request: Request):
+    row = _stored_or_404(request.path_params["scan_id"])
+    name = row["id"]
+    return Response(row["json"] or "{}", media_type="application/json",
+                    headers={"Content-Disposition": f'attachment; filename="webscan-{name}.json"'})
+
+
+async def stored_sarif(request: Request):
+    row = _stored_or_404(request.path_params["scan_id"])
+    if not row["sarif"]:
+        raise HTTPException(status_code=404, detail="SARIF is available for website scans only")
+    name = row["id"]
+    return Response(row["sarif"], media_type="application/json",
+                    headers={"Content-Disposition": f'attachment; filename="webscan-{name}.sarif.json"'})
+
+
+async def stored_pdf(request: Request):
+    row = _stored_or_404(request.path_params["scan_id"])
+    try:
+        directory = Path(tempfile.mkdtemp(prefix="webscan-pdf-"))
+        output = pdf.html_to_pdf(row["html"] or "", directory / f"webscan-{row['id']}.pdf")
+    except pdf.PdfUnavailable as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    return FileResponse(output, media_type="application/pdf", filename=output.name)
+
+
 async def login(request: Request):
     token = auth.configured_token()
     if not token:
@@ -276,6 +321,11 @@ routes = [
     Route("/", index),
     Route("/health", health),
     Route("/login", login, methods=["GET", "POST"]),
+    Route("/history", history_page),
+    Route("/report/{scan_id}.json", stored_json),
+    Route("/report/{scan_id}.sarif", stored_sarif),
+    Route("/report/{scan_id}.pdf", stored_pdf),
+    Route("/report/{scan_id}", stored_html),
     Route("/tool/{tool_id}", tool_form),
     Route("/tool/{tool_id}", start, methods=["POST"]),
     Route("/job/{job_id}", job_page),

@@ -11,6 +11,7 @@ from typing import Any, Callable
 from webscan.core.engine import ScanOptions, run_scan
 from webscan.core.models import ScanResult
 from webscan.core.toolreport import ToolReport
+from webscan.core import history
 from webscan.tools.base import ToolOptions, get_tool
 
 
@@ -102,6 +103,7 @@ class JobStore:
                 job.error = job.result.errors[0] if job.result.errors else "scan failed"
             else:
                 job.state, job.stage = "finished", "Finished"
+                _persist(job)
         except Exception as exc:  # noqa: BLE001
             job.state, job.error = "failed", f"{type(exc).__name__}: {exc}"
 
@@ -119,6 +121,7 @@ class JobStore:
                 job.state, job.error = "failed", (report.errors[0] if report.errors else "failed")
             else:
                 job.state, job.stage = "finished", "Finished"
+                _persist(job)
         except Exception as exc:  # noqa: BLE001
             job.state, job.error = "failed", f"{type(exc).__name__}: {exc}"
 
@@ -129,3 +132,11 @@ class JobStore:
         with self._lock:
             jobs = sorted(self._jobs.values(), key=lambda j: j.created_at, reverse=True)
         return jobs[:limit]
+
+
+def _persist(job: "Job") -> None:
+    """Save a finished job to the database; never let persistence break a scan."""
+    try:
+        history.record(job.result, job.id)
+    except Exception:  # noqa: BLE001
+        pass
