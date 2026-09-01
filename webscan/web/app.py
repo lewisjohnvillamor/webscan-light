@@ -5,6 +5,7 @@ self-hosted footprint small.
 """
 from __future__ import annotations
 
+import os
 import tempfile
 from pathlib import Path
 
@@ -26,8 +27,6 @@ from starlette.templating import Jinja2Templates
 from webscan import __version__
 from webscan.core.engine import ScanOptions
 from webscan.core.http import normalize_target
-import os as _os
-
 from webscan.core.registry import load_checks
 from webscan.core import database, history, notify, scope
 from webscan.core import scheduler as scheduler_mod
@@ -123,7 +122,8 @@ async def start(request: Request):
         job = jobs.start_website(ScanOptions(
             target=target, offline=_truthy(form.get("offline")),
             verify_tls=not _truthy(form.get("insecure")),
-            timeout=num("timeout", 15.0), max_pages=int(num("max_items", 0)) or 15))
+            timeout=num("timeout", 15.0), max_pages=int(num("max_items", 0)) or 15,
+            delay=num("delay", 0.0)))
         return RedirectResponse(url=f"/job/{job.id}", status_code=303)
 
     if not get_tool(tool_id):
@@ -132,6 +132,7 @@ async def start(request: Request):
         timeout=num("timeout", 10.0), offline=_truthy(form.get("offline")),
         verify_tls=not _truthy(form.get("insecure")), ports=form.get("ports") or "",
         wordlist=form.get("wordlist") or "", max_items=int(num("max_items", 0)),
+        delay=num("delay", 0.0),
         active=True, authorized=_truthy(form.get("authorized")),
         extra={"time_based": "1"} if _truthy(form.get("time_based")) else {})
     cached = _reuse(request, tool_id, target, form)
@@ -274,7 +275,7 @@ def _finished_or_404(job_id: str):
 
 def _scan_ttl() -> int:
     try:
-        return int(_os.environ.get("WEBSCAN_SCAN_TTL", "600"))
+        return int(os.environ.get("WEBSCAN_SCAN_TTL", "600"))
     except ValueError:
         return 600
 
@@ -489,14 +490,13 @@ routes = [
 ]
 
 import contextlib
-import os as _os
 
 _scheduler = scheduler_mod.Scheduler()
 
 
 @contextlib.asynccontextmanager
 async def _lifespan(app):
-    if _os.environ.get("WEBSCAN_NO_SCHEDULER", "").lower() not in ("1", "true", "yes", "on"):
+    if os.environ.get("WEBSCAN_NO_SCHEDULER", "").lower() not in ("1", "true", "yes", "on"):
         _scheduler.start()
     try:
         yield

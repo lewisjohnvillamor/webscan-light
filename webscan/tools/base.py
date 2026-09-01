@@ -23,6 +23,7 @@ class ToolOptions:
     ports: str = ""              # "top100" | "top1000" | "1-1024" | "80,443,..."
     wordlist: str = ""           # path to a custom wordlist
     max_items: int = 0           # cap results (0 = tool default)
+    delay: float = 0.0           # min seconds between requests (politeness)
     active: bool = False         # opt-in to active payload testing
     authorized: bool = False     # explicit consent for intrusive tools
     extra: dict[str, str] = field(default_factory=dict)

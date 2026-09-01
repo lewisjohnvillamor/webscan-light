@@ -29,7 +29,7 @@ def run(target: str, options: ToolOptions) -> ToolReport:
     base = normalize_target(target)
     report = ToolReport(tool="webmisc", tool_name="Web Misconfig Scanner", target=base)
     report.params = [("Target", base)]
-    client = HttpClient(timeout=options.timeout, verify_tls=options.verify_tls)
+    client = HttpClient(timeout=options.timeout, verify_tls=options.verify_tls, delay=options.delay)
     port = "443/tcp" if urlparse(base).scheme == "https" else "80/tcp"
     checks: list[list[str]] = []
 

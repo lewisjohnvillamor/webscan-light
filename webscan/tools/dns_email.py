@@ -4,8 +4,6 @@ from __future__ import annotations
 import socket
 import struct
 
-import requests
-
 from webscan.core.models import Classification, Confidence, Finding, Severity, Table
 from webscan.core.toolreport import Section, ToolReport
 

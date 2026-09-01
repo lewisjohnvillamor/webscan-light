@@ -103,9 +103,13 @@ def _match_signature(signature: dict, context: ScanContext) -> Technology | None
 
 def detect(context: ScanContext) -> list[Technology]:
     """Run every signature; cached on the context so checks can share the result."""
-    if "technologies" in context.shared:
-        return context.shared["technologies"]
+    cached = context.shared.get("technologies")
+    if cached is not None:
+        return cached
+    return context.cached("technologies", lambda: _detect(context))
 
+
+def _detect(context: ScanContext) -> list[Technology]:
     found: dict[str, Technology] = {}
     for signature in SIGNATURES:
         tech = _match_signature(signature, context)
@@ -126,9 +130,7 @@ def detect(context: ScanContext) -> list[Technology]:
                         evidence=[f"implied by {signature['name']}"],
                     )
 
-    technologies = sorted(found.values(), key=lambda t: t.name.lower())
-    context.shared["technologies"] = technologies
-    return technologies
+    return sorted(found.values(), key=lambda t: t.name.lower())
 
 
 @check("technologies", "Scanned for website technologies", order=10)

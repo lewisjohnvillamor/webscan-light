@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "webscan-light"
-version = "1.0.0"
+dynamic = ["version"]
 description = "A free, self-hosted website vulnerability scanner with CLI and web UI"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -38,6 +38,9 @@ webscan = "webscan.cli:main"
 [project.urls]
 Homepage = "https://github.com/lewisjohnvillamor/webscan-light"
 Issues = "https://github.com/lewisjohnvillamor/webscan-light/issues"
+
+[tool.setuptools.dynamic]
+version = {attr = "webscan.__version__"}
 
 [tool.setuptools.packages.find]
 include = ["webscan*"]

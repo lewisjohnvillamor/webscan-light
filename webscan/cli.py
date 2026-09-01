@@ -56,6 +56,7 @@ def build_parser() -> argparse.ArgumentParser:
     scan.add_argument("--max-depth", type=int, default=2, help="crawl depth (default: 2)")
     scan.add_argument("--timeout", type=float, default=15.0, help="per-request timeout in seconds")
     scan.add_argument("--workers", type=int, default=8, help="parallel checks (default: 8)")
+    scan.add_argument("--delay", type=float, default=0.0, help="min seconds between requests (politeness; avoids rate-limits/bans)")
     scan.add_argument("--insecure", action="store_true",
                       help="do not verify the target's TLS certificate")
     scan.add_argument("--offline", action="store_true",
@@ -98,6 +99,7 @@ def build_parser() -> argparse.ArgumentParser:
     run_p.add_argument("--max-items", type=int, default=0, help="cap results / crawl breadth")
     run_p.add_argument("--timeout", type=float, default=10.0, help="per-request timeout")
     run_p.add_argument("--workers", type=int, default=40, help="parallel workers")
+    run_p.add_argument("--delay", type=float, default=0.0, help="min seconds between requests (politeness)")
     run_p.add_argument("--offline", action="store_true", help="skip online lookups")
     run_p.add_argument("--insecure", action="store_true", help="do not verify TLS")
     run_p.add_argument("--authorized", action="store_true",
@@ -286,7 +288,7 @@ def cmd_run(args: argparse.Namespace) -> int:
 
     options = ToolOptions(
         timeout=args.timeout, workers=args.workers, offline=args.offline,
-        verify_tls=not args.insecure, ports=args.ports, wordlist=args.wordlist,
+        verify_tls=not args.insecure, ports=args.ports, wordlist=args.wordlist, delay=args.delay,
         max_items=args.max_items, active=True, authorized=args.authorized,
         extra={"time_based": "1"} if args.time_based else {},
     )
@@ -430,6 +432,7 @@ def cmd_scan(args: argparse.Namespace) -> int:
         verify_tls=not args.insecure,
         offline=args.offline,
         min_cvss=args.min_cvss,
+        delay=args.delay,
         user_agent=args.user_agent,
         extra_headers=_parse_headers(args.header),
         only=[i.strip() for i in args.only.split(",") if i.strip()],

@@ -26,7 +26,7 @@ def run(target: str, options: ToolOptions) -> ToolReport:
         words = words[: options.max_items]
     report.params = [("Base URL", base), ("Paths tested", str(len(words)))]
 
-    client = HttpClient(timeout=options.timeout, verify_tls=options.verify_tls)
+    client = HttpClient(timeout=options.timeout, verify_tls=options.verify_tls, delay=options.delay)
     # Calibrate against a random path so we can recognise soft-404s.
     baseline = client.get(f"{base}/webscan-not-there-{abs(hash(base)) % 99999}")
     soft404_len = len(baseline.text) if baseline.ok and baseline.status_code == 200 else -1

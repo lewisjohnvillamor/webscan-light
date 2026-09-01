@@ -6,8 +6,6 @@ execution would be possible. It never delivers a working exploit payload.
 """
 from __future__ import annotations
 
-import html as html_lib
-import re
 
 from webscan.core.http import HttpClient, normalize_target
 from webscan.core.models import Classification, Confidence, Finding, Severity, Table
@@ -35,7 +33,7 @@ def run(target: str, options: ToolOptions) -> ToolReport:
             "authorization box (UI) to confirm you are permitted to test this target.")
         return report.finish("Blocked")
 
-    client = HttpClient(timeout=options.timeout, verify_tls=options.verify_tls)
+    client = HttpClient(timeout=options.timeout, verify_tls=options.verify_tls, delay=options.delay)
     points = discover(client, base, max_pages=options.max_items or 10, max_depth=2)
     report.stats = [("Injection points", str(len(points)))]
     if not points:
@@ -56,11 +54,7 @@ def run(target: str, options: ToolOptions) -> ToolReport:
         raw_breakout = ""
         status = "reflected (encoded)" if reflected else "not reflected"
         if reflected:
-            # Look at how the breakout characters came back around our marker.
-            window = body[max(0, body.find(marker) - 40): body.find(marker) + len(probe) + 40]
-            unencoded = [c for c in BREAKOUT if c in window and html_lib.escape(c) not in
-                         window.replace(c, "", 1)]
-            # Simpler, robust check: are the raw chars present next to the marker?
+            # Are the raw breakout characters reflected right after our marker?
             tail = body[body.find(marker) + len(marker): body.find(marker) + len(marker) + 6]
             raw_breakout = "".join(c for c in BREAKOUT if c in tail)
             if raw_breakout:

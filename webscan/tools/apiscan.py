@@ -24,7 +24,7 @@ def run(target: str, options: ToolOptions) -> ToolReport:
     base = normalize_target(target).rstrip("/")
     report = ToolReport(tool="api", tool_name="API Scanner", target=base)
     report.params = [("Base URL", base)]
-    client = HttpClient(timeout=options.timeout, verify_tls=options.verify_tls)
+    client = HttpClient(timeout=options.timeout, verify_tls=options.verify_tls, delay=options.delay)
 
     found_rows: list[list[str]] = []
     for path in DEFINITION_PATHS:

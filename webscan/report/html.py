@@ -10,7 +10,7 @@ from jinja2 import Environment, FileSystemLoader
 from markupsafe import Markup, escape
 
 from webscan import __version__
-from webscan.core.models import ScanResult, Severity
+from webscan.core.models import ScanResult
 
 from . import charts
 from .scoring import grade_from_counts

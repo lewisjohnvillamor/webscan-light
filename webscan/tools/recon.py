@@ -62,7 +62,7 @@ def run(target: str, options: ToolOptions) -> ToolReport:
         if rdap_rows:
             report.sections.append(Section(title="Domain registration (RDAP)", kv=rdap_rows))
 
-    client = HttpClient(timeout=options.timeout, verify_tls=options.verify_tls)
+    client = HttpClient(timeout=options.timeout, verify_tls=options.verify_tls, delay=options.delay)
     resp = client.get(url)
     if resp.ok:
         interesting = ["Server", "X-Powered-By", "Via", "X-AspNet-Version", "Content-Type",

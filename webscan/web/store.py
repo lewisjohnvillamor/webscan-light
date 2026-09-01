@@ -6,10 +6,9 @@ import uuid
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Any, Callable
+from typing import Any
 
 from webscan.core.engine import ScanOptions, run_scan
-from webscan.core.models import ScanResult
 from webscan.core.toolreport import ToolReport
 from webscan.core import history
 from webscan.tools.base import ToolOptions, get_tool
