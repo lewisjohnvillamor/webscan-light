@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Scanning {{ job.target }}{% endblock %}
+{% block head %}
+<style>
+  .bar { height:9px; background:var(--line); border-radius:99px; overflow:hidden; margin:16px 0 10px; }
+  .bar > div { height:100%; width:5%; background:var(--accent); border-radius:99px;
+               transition:width .35s ease; }
+  .stage { color:var(--muted); font-size:13px; font-variant-numeric:tabular-nums; }
+</style>
+{% endblock %}
+{% block content %}
+<div class="card">
+  <h2>Scanning {{ job.target }}</h2>
+  <div class="bar"><div id="fill"></div></div>
+  <div class="stage" id="stage">Starting…</div>
+  <p class="hint">This page refreshes itself; the report opens automatically when the scan finishes.</p>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+  const id = {{ job.id|tojson }};
+  const fill = document.getElementById('fill');
+  const stage = document.getElementById('stage');
+  async function poll() {
+    try {
+      const response = await fetch(`/api/scan/${id}`);
+      if (!response.ok) throw new Error(response.status);
+      const job = await response.json();
+      fill.style.width = job.percent + '%';
+      stage.textContent = job.total
+        ? `${job.done} of ${job.total} checks complete`
+        : (job.stage || 'Working') + '…';
+      if (job.state === 'finished' || job.state === 'failed') {
+        location.reload();
+        return;
+      }
+    } catch (error) {
+      stage.textContent = 'Lost contact with the scanner — retrying…';
+    }
+    setTimeout(poll, 900);
+  }
+  poll();
+</script>
+{% endblock %}

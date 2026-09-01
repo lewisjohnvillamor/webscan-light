@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Website Vulnerability Scanner Report — {{ result.target }}</title>
+<style>
+  :root {
+    --ink: #1c2430;
+    --muted: #5b6675;
+    --line: #dde3ea;
+    --bg: #ffffff;
+    --panel: #f6f8fa;
+    --critical: #7b1d1d;
+    --high: #d93a2b;
+    --medium: #e88c1a;
+    --low: #2f80d8;
+    --info: #7a8596;
+    --accent: #1d4ed8;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: #eef1f5;
+    color: var(--ink);
+    font: 13px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  .sheet {
+    max-width: 960px;
+    margin: 24px auto;
+    padding: 40px 44px 56px;
+    background: var(--bg);
+    box-shadow: 0 1px 3px rgba(16,24,40,.12);
+  }
+  h1 { font-size: 22px; margin: 0 0 4px; letter-spacing: -.2px; }
+  h2 {
+    font-size: 17px; margin: 34px 0 14px; padding-bottom: 7px;
+    border-bottom: 2px solid var(--line);
+  }
+  h3 { font-size: 13px; margin: 16px 0 6px; }
+  a { color: var(--accent); text-decoration: none; word-break: break-word; }
+  a:hover { text-decoration: underline; }
+  .target { font-size: 14px; color: var(--muted); margin: 0 0 6px; }
+  .target a { font-weight: 600; }
+  .notice {
+    margin: 16px 0 0; padding: 11px 14px; border-left: 3px solid var(--accent);
+    background: var(--panel); color: var(--muted); font-size: 12px;
+  }
+
+  /* ---- Summary ---- */
+  .summary { display: grid; grid-template-columns: .9fr 1fr 1.7fr; gap: 24px; }
+  .summary h3 { color: var(--muted); font-weight: 600; text-transform: none; }
+  .risk-level { font-size: 30px; font-weight: 700; line-height: 1.15; }
+  .kv { width: 100%; border-collapse: collapse; }
+  .kv td { padding: 2px 0; vertical-align: top; }
+  .kv td:first-child { color: var(--muted); padding-right: 14px; white-space: nowrap; }
+  .kv td:last-child { text-align: right; font-variant-numeric: tabular-nums; }
+  .summary .kv.info td:last-child { text-align: left; white-space: nowrap; }
+  .dot {
+    display: inline-block; width: 9px; height: 9px; border-radius: 50%;
+    margin-right: 7px; vertical-align: baseline;
+  }
+
+  .sev-critical { color: var(--critical); } .bg-critical { background: var(--critical); }
+  .sev-high     { color: var(--high); }     .bg-high     { background: var(--high); }
+  .sev-medium   { color: var(--medium); }   .bg-medium   { background: var(--medium); }
+  .sev-low      { color: var(--low); }      .bg-low      { background: var(--low); }
+  .sev-info     { color: var(--info); }     .bg-info     { background: var(--info); }
+
+  /* ---- Findings ---- */
+  .finding { margin: 26px 0 0; padding-top: 20px; border-top: 1px solid var(--line); }
+  .finding:first-of-type { border-top: 0; padding-top: 4px; }
+  .finding-head { display: flex; align-items: center; flex-wrap: wrap; gap: 9px; }
+  .finding-title { font-size: 15px; font-weight: 700; margin: 0; }
+  .badge {
+    font-size: 10px; font-weight: 700; letter-spacing: .5px; padding: 2px 7px;
+    border-radius: 3px; border: 1px solid var(--line); color: var(--muted);
+    background: var(--panel); white-space: nowrap;
+  }
+  .badge.confirmed { color: #1b7a3d; border-color: #b6e0c4; background: #eefaf1; }
+  .port { color: var(--muted); font-size: 12px; margin: 5px 0 12px; }
+
+  table.data { width: 100%; border-collapse: collapse; margin: 10px 0 4px; font-size: 12px; }
+  table.data th, table.data td {
+    border: 1px solid var(--line); padding: 7px 9px; text-align: left;
+    vertical-align: top; word-break: break-word; white-space: pre-line;
+  }
+  table.data th { background: var(--panel); font-weight: 600; white-space: nowrap; }
+  table.data td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .table-scroll { overflow-x: auto; }
+
+  details.details { margin-top: 14px; }
+  details.details > summary {
+    cursor: pointer; font-weight: 600; font-size: 12px; color: var(--muted);
+    padding: 5px 0; list-style: none;
+  }
+  details.details > summary::before { content: "▸ "; }
+  details.details[open] > summary::before { content: "▾ "; }
+  .details-body {
+    border-left: 2px solid var(--line); padding: 4px 0 4px 14px; margin-top: 4px;
+  }
+  .details-body p { margin: 3px 0 12px; white-space: pre-line; }
+  .details-body ul { margin: 3px 0 12px; padding-left: 18px; }
+  .label { font-weight: 700; }
+  pre.exchange {
+    background: var(--panel); border: 1px solid var(--line); padding: 10px;
+    font-size: 11px; overflow-x: auto; margin: 4px 0 12px; white-space: pre-wrap;
+  }
+
+  /* ---- Coverage ---- */
+  ul.tests { list-style: none; padding: 0; margin: 8px 0 0;
+             columns: 2; column-gap: 34px; font-size: 12px; }
+  ul.tests li { padding: 2px 0 2px 20px; position: relative;
+                break-inside: avoid; -webkit-column-break-inside: avoid; }
+  ul.tests li::before {
+    content: "✓"; position: absolute; left: 0; color: #1b7a3d; font-weight: 700;
+  }
+  .errors { color: #8a4b00; background: #fff7e8; border-left: 3px solid var(--medium);
+            padding: 10px 14px; font-size: 12px; margin-top: 12px; }
+  footer { margin-top: 34px; padding-top: 12px; border-top: 1px solid var(--line);
+           color: var(--muted); font-size: 11px; display: flex;
+           justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+
+  @media (max-width: 720px) {
+    .sheet { padding: 24px 18px 36px; margin: 0; }
+    .summary { grid-template-columns: 1fr; gap: 18px; }
+    ul.tests { columns: 1; }
+  }
+  @media print {
+    body { background: #fff; }
+    .sheet { margin: 0; max-width: none; box-shadow: none; padding: 0 12mm; }
+    .finding, table.data, li { break-inside: avoid; }
+    details.details { display: block; }
+    details.details > summary { display: none; }
+    .details-body { border-left-color: #ccc; }
+    h2 { break-after: avoid; }
+    a { color: var(--ink); }
+  }
+</style>
+</head>
+<body>
+<div class="sheet">
+
+  <h1>Website Vulnerability Scanner Report ({{ result.scan_type }})</h1>
+  <p class="target"><a href="{{ result.target }}">{{ result.target }}</a></p>
+  {% if scanner_note %}<p class="notice">{{ scanner_note }}</p>{% endif %}
+
+  <h2>Summary</h2>
+  <div class="summary">
+    <div>
+      <h3>Overall risk level:</h3>
+      <div class="risk-level sev-{{ result.overall_risk.label|lower }}">{{ result.overall_risk.label }}</div>
+    </div>
+    <div>
+      <h3>Risk ratings:</h3>
+      <table class="kv">
+        {% for name, count in result.rating_counts.items() %}
+        <tr>
+          <td><span class="dot bg-{{ name|lower }}"></span>{{ name }}:</td>
+          <td>{{ count }}</td>
+        </tr>
+        {% endfor %}
+      </table>
+    </div>
+    <div>
+      <h3>Scan information:</h3>
+      <table class="kv info">
+        <tr><td>Start time:</td><td>{{ result.start_time|localtime }}</td></tr>
+        <tr><td>Finish time:</td><td>{{ result.finish_time|localtime }}</td></tr>
+        <tr><td>Scan duration:</td><td>{{ result.duration_seconds }} sec</td></tr>
+        <tr><td>Tests performed:</td><td>{{ result.tests_performed|length }}</td></tr>
+        <tr><td>Scan status:</td><td>{{ result.status }}</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <h2>Findings</h2>
+  {% if not result.findings %}
+    <p>No issues were identified by the {{ result.tests_performed|length }} tests that were run.</p>
+  {% endif %}
+
+  {% for finding in result.sorted_findings %}
+  <section class="finding">
+    <div class="finding-head">
+      <span class="dot bg-{{ finding.severity.label|lower }}"></span>
+      <h3 class="finding-title">{{ finding.title }}</h3>
+      <span class="badge sev-{{ finding.severity.label|lower }}">{{ finding.severity.label|upper }}</span>
+      <span class="badge {{ 'confirmed' if finding.confidence.value == 'CONFIRMED' else '' }}">{{ finding.confidence.value }}</span>
+    </div>
+    {% if finding.port %}<div class="port">port {{ finding.port }}</div>{% endif %}
+
+    {% if finding.table and finding.table.rows %}
+    <div class="table-scroll">
+      <table class="data">
+        <thead><tr>{% for column in finding.table.columns %}<th>{{ column }}</th>{% endfor %}</tr></thead>
+        <tbody>
+          {% for row in finding.table.rows %}
+          <tr>{% for cell in row %}<td{{ ' class="num"' if finding.table.columns[loop.index0] in numeric_columns else '' }}>{{ cell|linkify }}</td>{% endfor %}</tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% endif %}
+
+    <details class="details" open>
+      <summary>Details</summary>
+      <div class="details-body">
+        {% if finding.risk_description %}
+        <div class="label">Risk description:</div>
+        <p>{{ finding.risk_description }}</p>
+        {% endif %}
+        {% if finding.recommendation %}
+        <div class="label">Recommendation:</div>
+        <p>{{ finding.recommendation }}</p>
+        {% endif %}
+        {% if finding.references %}
+        <div class="label">References:</div>
+        <ul>{% for reference in finding.references %}<li><a href="{{ reference }}">{{ reference }}</a></li>{% endfor %}</ul>
+        {% endif %}
+        {% if finding.classification.as_rows() %}
+        <div class="label">Classification:</div>
+        <table class="kv" style="max-width:640px">
+          {% for label, value in finding.classification.as_rows() %}
+          <tr><td>{{ label }} :</td><td style="text-align:left">{{ value }}</td></tr>
+          {% endfor %}
+        </table>
+        {% endif %}
+        {% if include_exchanges and finding.request_response %}
+        <div class="label">Request / Response:</div>
+        <pre class="exchange">{{ finding.request_response }}</pre>
+        {% endif %}
+      </div>
+    </details>
+  </section>
+  {% endfor %}
+
+  <h2>Scan coverage information</h2>
+  <h3>List of tests performed ({{ result.tests_performed|length }})</h3>
+  {% for port in result.ports %}<div class="port">Port {{ port }}</div>{% endfor %}
+  <ul class="tests">
+    {% for test in result.tests_performed %}<li>{{ test }}</li>{% endfor %}
+  </ul>
+
+  <h2>Scan parameters</h2>
+  <table class="kv" style="max-width:520px">
+    <tr><td>target:</td><td style="text-align:left">{{ result.target }}</td></tr>
+    <tr><td>scan_type:</td><td style="text-align:left">{{ result.scan_type }}</td></tr>
+    <tr><td>authentication:</td><td style="text-align:left">{{ result.authentication }}</td></tr>
+  </table>
+
+  <h2>Scan stats</h2>
+  <table class="kv" style="max-width:520px">
+    <tr><td>Unique Injection Points Detected:</td><td>{{ result.stats.unique_injection_points }}</td></tr>
+    <tr><td>URLs spidered:</td><td>{{ result.stats.urls_spidered }}</td></tr>
+    <tr><td>Total number of HTTP requests:</td><td>{{ result.stats.http_requests }}</td></tr>
+    <tr><td>Average time until a response was received:</td><td>{{ result.stats.average_response_ms }}ms</td></tr>
+  </table>
+
+  {% if result.errors %}
+  <div class="errors">
+    <strong>Scan notes</strong>
+    <ul style="margin:6px 0 0;padding-left:18px">
+      {% for error in result.errors %}<li>{{ error }}</li>{% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+
+  <footer>
+    <span>Generated by webscan-light v{{ version }}</span>
+    <span>{{ generated_at|localtime }}</span>
+  </footer>
+</div>
+</body>
+</html>

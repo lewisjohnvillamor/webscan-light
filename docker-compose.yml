@@ -1,0 +1,16 @@
+services:
+  webscan:
+    build: .
+    # Published on loopback only: the UI has no authentication and can be used
+    # to make this container reach any address. See "Exposure" in the README.
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - webscan-cache:/cache
+    environment:
+      # Optional: a free NVD key raises the CVE lookup rate limit.
+      - WEBSCAN_NVD_API_KEY=${WEBSCAN_NVD_API_KEY:-}
+    restart: unless-stopped
+
+volumes:
+  webscan-cache:
