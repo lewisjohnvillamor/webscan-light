@@ -25,6 +25,7 @@
       <div class="eyebrow">Overall risk level</div>
       <div class="risk-word">{{ risk }}</div>
       <div class="risk-meta">
+        Security grade <b style="color:var(--risk-color)">{{ charts.grade }}</b> ({{ charts.grade_score }}/100)<br>
         <b>{{ charts.total_findings }}</b> finding{{ '' if charts.total_findings == 1 else 's' }}
         · <b>{{ charts.confirmed }}</b> confirmed
         · <b>{{ result.tests_performed|length }}</b> tests

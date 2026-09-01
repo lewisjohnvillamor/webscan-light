@@ -92,3 +92,58 @@ def test_scope_guard():
     assert check("10.0.0.5", allow_private=False)[0] is False
     assert check("127.0.0.1", allow_private=False)[0] is False
     assert check("10.0.0.5", allow_private=True)[0] is True
+
+
+def test_new_tools_registered():
+    from webscan.tools.base import all_tools, load_tools
+    load_tools()
+    ids = {s.id for s in all_tools()}
+    for expected in ("dnsemail", "deps", "webmisc", "cloud", "secrets", "typosquat", "asm"):
+        assert expected in ids
+
+
+def test_manifest_parsing(tmp_path):
+    from webscan.tools.manifests import find_and_parse
+    (tmp_path / "requirements.txt").write_text("jinja2==3.1.2\nrequests==2.20.0\n")
+    (tmp_path / "package-lock.json").write_text(
+        '{"lockfileVersion":3,"packages":{"node_modules/lodash":{"version":"4.17.11"}}}')
+    deps = find_and_parse(str(tmp_path))
+    names = {(d["ecosystem"], d["name"]) for d in deps}
+    assert ("PyPI", "jinja2") in names
+    assert ("npm", "lodash") in names
+
+
+def test_secrets_scanner_detects_planted(tmp_path):
+    from webscan.tools.base import ToolOptions, get_tool, load_tools
+    load_tools()
+    # Build the token at runtime so no literal secret pattern is committed
+    # (GitHub push protection scans committed blobs).
+    fake = "sk_" + "live_" + "abcdef0123456789abcdef01"
+    (tmp_path / "cfg.py").write_text(f'stripe = "{fake}"\n')
+    report = get_tool("secrets").func(str(tmp_path), ToolOptions())
+    assert report.status == "Finished"
+    assert any("Stripe" in f.title for f in report.findings)
+
+
+def test_secrets_ignores_placeholders(tmp_path):
+    from webscan.tools.base import ToolOptions, get_tool, load_tools
+    load_tools()
+    (tmp_path / "cfg.py").write_text('api_key = "your-api-key-here-example"\n')
+    report = get_tool("secrets").func(str(tmp_path), ToolOptions())
+    assert not report.findings
+
+
+def test_scoring_and_badge():
+    from webscan.report.scoring import grade_from_counts
+    from webscan.report.badge import grade_badge
+    assert grade_from_counts({"Critical": 1, "High": 0, "Medium": 0, "Low": 0, "Info": 0})[0] == "F"
+    assert grade_from_counts({"Critical": 0, "High": 0, "Medium": 0, "Low": 0, "Info": 0})[0] == "A"
+    assert "<svg" in grade_badge("B")
+
+
+def test_typosquat_variants():
+    from webscan.tools.typosquat import _variants
+    v = _variants("google", "com")
+    assert "gogle.com" in v          # omission
+    assert any(d.endswith(".net") for d in v)  # TLD swap
+    assert "google.com" not in v     # excludes the original

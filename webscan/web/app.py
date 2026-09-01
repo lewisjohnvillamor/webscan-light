@@ -345,6 +345,21 @@ async def stored_pdf(request: Request):
     return FileResponse(output, media_type="application/pdf", filename=output.name)
 
 
+async def stored_badge(request: Request):
+    import json as _json
+    from webscan.report import badge, scoring
+    row = _stored_or_404(request.path_params["scan_id"])
+    letter, _ = scoring.grade_from_counts(_json.loads(row["rating_counts"] or "{}"))
+    return Response(badge.grade_badge(letter), media_type="image/svg+xml",
+                    headers={"Cache-Control": "no-cache"})
+
+
+async def stored_compliance(request: Request):
+    from webscan.report import compliance
+    row = _stored_or_404(request.path_params["scan_id"])
+    return HTMLResponse(compliance.render(row), headers={"Content-Security-Policy": REPORT_CSP})
+
+
 async def login(request: Request):
     token = auth.configured_token()
     if not token:
@@ -377,6 +392,8 @@ routes = [
     Route("/report/{scan_id}.json", stored_json),
     Route("/report/{scan_id}.sarif", stored_sarif),
     Route("/report/{scan_id}.pdf", stored_pdf),
+    Route("/report/{scan_id}/badge.svg", stored_badge),
+    Route("/report/{scan_id}/compliance", stored_compliance),
     Route("/report/{scan_id}", stored_html),
     Route("/tool/{tool_id}", tool_form),
     Route("/tool/{tool_id}", start, methods=["POST"]),

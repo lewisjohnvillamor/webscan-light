@@ -13,6 +13,7 @@ from webscan import __version__
 from webscan.core.models import ScanResult, Severity
 
 from . import charts
+from .scoring import grade_from_counts
 
 TEMPLATE_DIR = Path(__file__).parent / "templates"
 
@@ -87,7 +88,10 @@ def _build_charts(result: ScanResult) -> dict:
     owasp_chart = charts.hbars(list(owasp.items()), color_var="--accent")
 
     confirmed = sum(1 for f in result.findings if f.confidence.value == "CONFIRMED")
+    letter, score = grade_from_counts(counts)
     return {
+        "grade": letter,
+        "grade_score": score,
         "gauges": [Markup(g) for g in gauges],
         "stack": Markup(stack),
         "owasp_chart": Markup(owasp_chart),

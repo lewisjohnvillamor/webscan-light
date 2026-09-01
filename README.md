@@ -70,6 +70,13 @@ and testing suite. Run `webscan tools` to list them.
 | API Scanner | `api` | OpenAPI/Swagger discovery and GraphQL introspection |
 | XSS Detector | `xss` | Active reflected-XSS probing with a safe PoC *(needs `--authorized`)* |
 | SQLi Detector | `sqli` | Error/boolean/time-based SQLi detection *(needs `--authorized`)* |
+| DNS & Email Security | `dnsemail` | SPF, DKIM, DMARC, CAA, DNSSEC, MTA-STS and zone-transfer (AXFR) checks |
+| Dependency Scanner | `deps` | Known-vulnerable dependencies via OSV.dev (PyPI, npm, Go, Cargo, …) |
+| Web Misconfig Scanner | `webmisc` | CORS, clickjacking, open redirect, host-header and CRLF injection |
+| Cloud Storage Exposure | `cloud` | Public S3/GCS/Azure buckets guessed from the domain |
+| Secrets Scanner | `secrets` | Hard-coded credentials/keys/tokens in a local codebase |
+| Typosquat Monitor | `typosquat` | Registered, live look-alike domains (brand protection) |
+| Attack Surface Monitor | `asm` | Inventory subdomains/ports/TLS/DNS; schedule it for change alerts |
 | Sniper | `sniper` | Runs recon + detection tools and aggregates findings into one report |
 
 ```bash
@@ -78,7 +85,15 @@ webscan run ports example.com --ports top1000
 webscan run subdomains example.com -f html -o subs.html
 webscan run sqli "https://example.com/item?id=1" --authorized
 webscan run sniper example.com -f pdf -o sniper.pdf
+webscan run deps ./my-project           # scan a codebase's dependencies
+webscan run secrets ./my-project        # find hard-coded secrets
+webscan run dnsemail example.com        # email/DNS security posture
+webscan run asm example.com             # attack-surface inventory
 ```
+
+Website scans also get a **security grade (A-F)** with a shareable SVG badge
+(`/report/<id>/badge.svg`) and a **compliance mapping** view
+(`/report/<id>/compliance`) that ties findings to OWASP Top 10, PCI-DSS and ASVS.
 
 **Active tools send requests to the target.** `xss`, `sqli` and `sniper` are
 gated: they refuse to run without `--authorized` (CLI) or the authorization

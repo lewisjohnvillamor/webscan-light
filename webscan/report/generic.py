@@ -17,7 +17,7 @@ from .html import NUMERIC_COLUMNS, SEVERITY_VARS, _environment
 # Short monospace codes used as the report/masthead mark (no emoji).
 TOOL_GLYPHS = {
     "website": "WEB", "ssl": "TLS", "ports": "PRT", "network": "NET", "subdomains": "SUB",
-    "vhosts": "VHT", "recon": "RCN", "api": "API", "urlfuzzer": "FUZ", "dorks": "DRK",
+    "vhosts": "VHT", "dnsemail": "DNS", "deps": "DEP", "webmisc": "MSC", "cloud": "CLD", "secrets": "SEC", "typosquat": "TYP", "asm": "ASM", "recon": "RCN", "api": "API", "urlfuzzer": "FUZ", "dorks": "DRK",
     "takeover": "TKO", "xss": "XSS", "sqli": "SQL", "sniper": "SNP", "logger": "LOG",
 }
 
