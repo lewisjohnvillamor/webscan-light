@@ -3,10 +3,8 @@ from __future__ import annotations
 
 import json
 
-import pytest
-
-from webscan.core.toolreport import Section, ToolReport
 from webscan.core.models import Finding, Severity
+from webscan.core.toolreport import Section, ToolReport
 from webscan.report import generic
 from webscan.tools.base import ToolOptions, all_tools, get_tool, load_tools
 from webscan.tools.ports import parse_ports
@@ -57,7 +55,7 @@ def test_ports_scans_fixture(server):
     load_tools()
     from urllib.parse import urlparse
     port = urlparse(server).port
-    report = get_tool("ports").func(f"127.0.0.1", ToolOptions(ports=str(port), timeout=3))
+    report = get_tool("ports").func("127.0.0.1", ToolOptions(ports=str(port), timeout=3))
     assert report.status == "Finished"
     assert any(row[0] == str(port) for row in report.sections[0].table.rows)
 
@@ -134,8 +132,8 @@ def test_secrets_ignores_placeholders(tmp_path):
 
 
 def test_scoring_and_badge():
-    from webscan.report.scoring import grade_from_counts
     from webscan.report.badge import grade_badge
+    from webscan.report.scoring import grade_from_counts
     assert grade_from_counts({"Critical": 1, "High": 0, "Medium": 0, "Low": 0, "Info": 0})[0] == "F"
     assert grade_from_counts({"Critical": 0, "High": 0, "Medium": 0, "Low": 0, "Info": 0})[0] == "A"
     assert "<svg" in grade_badge("B")
@@ -147,3 +145,17 @@ def test_typosquat_variants():
     assert "gogle.com" in v          # omission
     assert any(d.endswith(".net") for d in v)  # TLD swap
     assert "google.com" not in v     # excludes the original
+
+
+def test_section_images_render_in_report():
+    from webscan.core.toolreport import Section, ToolReport
+    from webscan.report import generic
+    report = ToolReport(tool="asm", tool_name="Attack Surface Monitor", target="example.com")
+    tiny_png = ("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1"
+                "HAwCAAAAC0lEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==")
+    report.sections = [Section("Screenshots (1)", images=[("host.example.com", tiny_png)])]
+    report.finish()
+    html = generic.render(report)
+    assert 'class="shot"' in html
+    assert 'src="data:image/png;base64,' in html
+    assert "host.example.com" in html

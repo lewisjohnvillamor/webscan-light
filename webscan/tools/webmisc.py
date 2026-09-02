@@ -29,7 +29,8 @@ def run(target: str, options: ToolOptions) -> ToolReport:
     base = normalize_target(target)
     report = ToolReport(tool="webmisc", tool_name="Web Misconfig Scanner", target=base)
     report.params = [("Target", base)]
-    client = HttpClient(timeout=options.timeout, verify_tls=options.verify_tls, delay=options.delay)
+    client = HttpClient(timeout=options.timeout, verify_tls=options.verify_tls, delay=options.delay,
+                        extra_headers={"Cookie": options.cookie} if options.cookie else None)
     port = "443/tcp" if urlparse(base).scheme == "https" else "80/tcp"
     checks: list[list[str]] = []
 
@@ -95,7 +96,7 @@ def run(target: str, options: ToolOptions) -> ToolReport:
         checks.append(["Host header", "OK", "not reflected"])
 
     # ---- Open redirect + CRLF (need parameters) ----
-    points = discover(client, base, max_pages=options.max_items or 8, max_depth=2)
+    points = discover(client, base, max_pages=options.max_items or 8, max_depth=2, render=options.render)
     redirect_hit = crlf_hit = False
     for pt in points:
         if pt.param.lower() in REDIRECT_PARAMS and not redirect_hit:

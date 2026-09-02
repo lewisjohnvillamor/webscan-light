@@ -184,6 +184,14 @@ class HttpClient:
                 time.sleep(wait)
             self._last_request = time.monotonic()
 
+    def set_cookie_string(self, cookie: str) -> None:
+        """Load a "name=value; name2=value2" cookie string into the session."""
+        for part in (cookie or "").split(";"):
+            if "=" in part:
+                name, value = part.split("=", 1)
+                if name.strip():
+                    self.session.cookies.set(name.strip(), value.strip())
+
     def get(self, url: str, **kwargs: Any) -> Response:
         return self.request("GET", url, **kwargs)
 

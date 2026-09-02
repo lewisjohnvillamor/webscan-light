@@ -32,6 +32,11 @@ class ScanOptions:
     offline: bool = False
     min_cvss: float = 0.0
     delay: float = 0.0
+    render: bool = False
+    cookie: str = ""
+    login_url: str = ""
+    login_data: str = ""
+    logged_in: str = ""
     user_agent: str | None = None
     extra_headers: dict[str, str] = field(default_factory=dict)
     only: list[str] = field(default_factory=list)
@@ -53,12 +58,15 @@ def run_scan(options: ScanOptions, progress: ProgressHook | None = None) -> Scan
         client_kwargs["user_agent"] = options.user_agent
     client = HttpClient(**client_kwargs)
 
+    _apply_auth(client, options, result)
+
     def report(stage: str, done: int, total: int) -> None:
         if progress:
             progress(stage, done, total)
 
     report("Crawling", 0, 1)
-    crawl_result = crawl(client, target, max_pages=options.max_pages, max_depth=options.max_depth)
+    crawl_result = crawl(client, target, max_pages=options.max_pages, max_depth=options.max_depth,
+                         render=options.render)
     if not crawl_result.pages:
         probe = client.get(target)
         result.status = "Failed"
@@ -125,6 +133,38 @@ def run_scan(options: ScanOptions, progress: ProgressHook | None = None) -> Scan
     result.finish_time = datetime.now(timezone.utc)
     result.status = "Finished"
     return result
+
+
+def _apply_auth(client: HttpClient, options: ScanOptions, result: ScanResult) -> bool:
+    """Apply cookie / header / form-login authentication before crawling.
+
+    Cookies and extra headers are attached to the shared session so every
+    request is authenticated. A form login POSTs the given credentials and lets
+    the session capture the resulting cookies. Returns whether auth was applied.
+    """
+    from urllib.parse import parse_qsl
+
+    applied = False
+    if options.cookie:
+        client.set_cookie_string(options.cookie)
+        applied = True
+    if options.extra_headers.get("Cookie") or options.extra_headers.get("Authorization"):
+        applied = True
+    if options.login_url and options.login_data:
+        data = dict(parse_qsl(options.login_data, keep_blank_values=True))
+        resp = client.request("POST", options.login_url, data=data, allow_redirects=True)
+        if resp.ok:
+            applied = True
+        else:
+            result.errors.append(f"Login POST to {options.login_url} failed: {resp.error}")
+    if applied and options.logged_in:
+        probe = client.get(options.target, cache=False)
+        if probe.ok and options.logged_in not in probe.text:
+            result.errors.append(
+                "Authentication may have failed: the logged-in indicator "
+                f"'{options.logged_in}' was not found on the target after login.")
+    result.authentication = applied
+    return applied
 
 
 def _run_check(spec, context: ScanContext, result: ScanResult) -> list:

@@ -134,7 +134,8 @@ async def start(request: Request):
             target=target, offline=_truthy(form.get("offline")),
             verify_tls=not _truthy(form.get("insecure")),
             timeout=num("timeout", 15.0), max_pages=int(num("max_items", 0)) or 15,
-            delay=num("delay", 0.0)))
+            delay=num("delay", 0.0), render=_truthy(form.get("render")),
+            cookie=form.get("cookie") or ""))
         return RedirectResponse(url=f"/job/{job.id}", status_code=303)
 
     spec = get_tool(tool_id)
@@ -151,6 +152,7 @@ async def start(request: Request):
         wordlist=form.get("wordlist") or "", max_items=int(num("max_items", 0)),
         delay=num("delay", 0.0),
         active=True, authorized=_truthy(form.get("authorized")),
+        render=_truthy(form.get("render")), cookie=form.get("cookie") or "",
         extra={"time_based": "1"} if _truthy(form.get("time_based")) else {})
     cached = _reuse(request, tool_id, target, form)
     if cached:
