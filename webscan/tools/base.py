@@ -25,6 +25,7 @@ class ToolOptions:
     max_items: int = 0           # cap results (0 = tool default)
     delay: float = 0.0           # min seconds between requests (politeness)
     render: bool = False         # render pages with headless Chromium (SPA support)
+    cookie: str = ""             # cookie string for authenticated scanning
     active: bool = False         # opt-in to active payload testing
     authorized: bool = False     # explicit consent for intrusive tools
     extra: dict[str, str] = field(default_factory=dict)

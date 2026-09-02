@@ -32,7 +32,8 @@ def run(target: str, options: ToolOptions) -> ToolReport:
             "authorization box (UI) to confirm you are permitted to test this target.")
         return report.finish("Blocked")
 
-    client = HttpClient(timeout=options.timeout, verify_tls=options.verify_tls, delay=options.delay)
+    client = HttpClient(timeout=options.timeout, verify_tls=options.verify_tls, delay=options.delay,
+                        extra_headers={"Cookie": options.cookie} if options.cookie else None)
     points = discover(client, base, max_pages=options.max_items or 10, max_depth=2, render=options.render)
     report.stats = [("Injection points", str(len(points)))]
     if not points:

@@ -68,6 +68,13 @@ def build_parser() -> argparse.ArgumentParser:
     scan.add_argument("--user-agent", help="override the User-Agent header")
     scan.add_argument("-H", "--header", action="append", default=[], metavar="'Name: value'",
                       help="extra request header; repeatable (e.g. a session cookie)")
+    scan.add_argument("--cookie", default="", metavar="'a=b; c=d'",
+                      help="authenticate with a cookie string (logged-in scanning)")
+    scan.add_argument("--login-url", default="", help="form-login URL to POST credentials to")
+    scan.add_argument("--login-data", default="", metavar="'user=x&pass=y'",
+                      help="form-login body (urlencoded) POSTed to --login-url")
+    scan.add_argument("--logged-in", default="", metavar="TEXT",
+                      help="text expected on the target once authenticated (verifies login)")
     scan.add_argument("--only", default="", metavar="IDS",
                       help="comma-separated test ids to run exclusively")
     scan.add_argument("--skip", default="", metavar="IDS",
@@ -103,6 +110,8 @@ def build_parser() -> argparse.ArgumentParser:
     run_p.add_argument("--workers", type=int, default=40, help="parallel workers")
     run_p.add_argument("--delay", type=float, default=0.0, help="min seconds between requests (politeness)")
     run_p.add_argument("--render", action="store_true", help="render pages with headless Chromium (JS/SPA)")
+    run_p.add_argument("--cookie", default="", metavar="COOKIE",
+                       help="authenticate with a cookie string, e.g. 'a=b; c=d'")
     run_p.add_argument("--offline", action="store_true", help="skip online lookups")
     run_p.add_argument("--insecure", action="store_true", help="do not verify TLS")
     run_p.add_argument("--authorized", action="store_true",
@@ -293,6 +302,7 @@ def cmd_run(args: argparse.Namespace) -> int:
     options = ToolOptions(
         timeout=args.timeout, workers=args.workers, offline=args.offline,
         verify_tls=not args.insecure, ports=args.ports, wordlist=args.wordlist, delay=args.delay,
+        render=args.render, cookie=args.cookie,
         max_items=args.max_items, active=True, authorized=args.authorized,
         extra={"time_based": "1"} if args.time_based else {},
     )
@@ -438,6 +448,10 @@ def cmd_scan(args: argparse.Namespace) -> int:
         min_cvss=args.min_cvss,
         delay=args.delay,
         render=args.render,
+        cookie=args.cookie,
+        login_url=args.login_url,
+        login_data=args.login_data,
+        logged_in=args.logged_in,
         user_agent=args.user_agent,
         extra_headers=_parse_headers(args.header),
         only=[i.strip() for i in args.only.split(",") if i.strip()],
