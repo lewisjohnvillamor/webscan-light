@@ -28,6 +28,21 @@ Tests performed      40
 └──────┴──────────────────────────────────────────────────┴─────────────┘
 ```
 
+## Ethical use
+
+webscan-light is built for defenders and learners — to find and fix weaknesses,
+not to break in.
+
+- **Get permission first.** Only scan systems you own or have explicit written
+  authorisation to test. Unauthorised scanning is illegal in many jurisdictions.
+- **Do no harm.** Active checks send real payloads; run them only on
+  non-production or approved targets, and keep scans gentle.
+- **Disclose responsibly.** If you find a vulnerability that isn't yours, report
+  it privately to the owner — don't exploit or publish it.
+- **Learn, don't weaponise.** Findings are for understanding and remediation.
+
+You are responsible for how you use this tool. Use it to make the web safer.
+
 ## Demo
 
 ![webscan-light demo](docs/img/demo.gif)
