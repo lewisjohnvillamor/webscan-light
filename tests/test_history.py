@@ -1,7 +1,6 @@
 """Persistence layer tests (isolated SQLite DB via env)."""
 from __future__ import annotations
 
-import os
 import tempfile
 
 import pytest

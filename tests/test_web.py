@@ -11,6 +11,7 @@ pytest.importorskip("httpx")
 # The test fixture server runs on loopback, which the SSRF scope guard blocks by
 # default. Opt into private targets before importing the app.
 import os
+
 os.environ["WEBSCAN_ALLOW_PRIVATE"] = "1"
 os.environ["WEBSCAN_NO_CONSENT"] = "1"
 os.environ["WEBSCAN_SCAN_TTL"] = "0"  # disable reuse so each test scans fresh

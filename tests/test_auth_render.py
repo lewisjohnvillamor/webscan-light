@@ -44,8 +44,8 @@ def test_render_option_defaults_off_and_scan_still_works(server):
 
 
 def test_spider_merges_rendered_dom():
-    from webscan.core.spider import Page, _merge_rendered
     from webscan.core.http import Response
+    from webscan.core.spider import Page, _merge_rendered
     resp = Response(url="https://x/", status_code=200, headers={"Content-Type": "text/html"},
                     text="<html></html>", content=b"", elapsed_ms=1, request_method="GET",
                     request_headers={})
