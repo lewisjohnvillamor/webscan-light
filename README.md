@@ -90,6 +90,10 @@ and testing suite. Run `webscan tools` to list them.
 | Secrets Scanner | `secrets` | Hard-coded credentials/keys/tokens in a local codebase |
 | Typosquat Monitor | `typosquat` | Registered, live look-alike domains (brand protection) |
 | Attack Surface Monitor | `asm` | Inventory subdomains/ports/TLS/DNS; schedule it for change alerts |
+| SSTI Detector | `ssti` | Server-side template injection (7*7=49 probe) *(needs `--authorized`)* |
+| Command Injection | `cmdi` | OS command injection, output + time based *(needs `--authorized`)* |
+| LFI / Path Traversal | `lfi` | Local file inclusion / path traversal *(needs `--authorized`)* |
+| Stored XSS Detector | `storedxss` | Submit markers via forms, detect persistent XSS on re-crawl *(needs `--authorized`)* |
 | Sniper | `sniper` | Runs recon + detection tools and aggregates findings into one report |
 
 ```bash

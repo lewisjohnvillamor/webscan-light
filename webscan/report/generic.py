@@ -17,7 +17,7 @@ from .html import NUMERIC_COLUMNS, SEVERITY_VARS, _environment
 TOOL_GLYPHS = {
     "website": "WEB", "ssl": "TLS", "ports": "PRT", "network": "NET", "subdomains": "SUB",
     "vhosts": "VHT", "dnsemail": "DNS", "deps": "DEP", "webmisc": "MSC", "cloud": "CLD", "secrets": "SEC", "typosquat": "TYP", "asm": "ASM", "recon": "RCN", "api": "API", "urlfuzzer": "FUZ", "dorks": "DRK",  # noqa: E501
-    "takeover": "TKO", "xss": "XSS", "sqli": "SQL", "sniper": "SNP", "logger": "LOG",
+    "takeover": "TKO", "xss": "XSS", "sqli": "SQL", "ssti": "SSTI", "cmdi": "CMD", "lfi": "LFI", "storedxss": "STOR", "sniper": "SNP", "logger": "LOG",  # noqa: E501
 }
 
 
