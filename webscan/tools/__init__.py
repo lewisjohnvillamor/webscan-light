@@ -23,3 +23,4 @@ from . import (  # noqa: F401
     webmisc,
     xss,
 )
+from .adapters import nmap, nuclei  # noqa: F401  (optional external-tool adapters)

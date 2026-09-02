@@ -110,6 +110,8 @@ and testing suite. Run `webscan tools` to list them.
 | LFI / Path Traversal | `lfi` | Local file inclusion / path traversal *(needs `--authorized`)* |
 | Stored XSS Detector | `storedxss` | Submit markers via forms, detect persistent XSS on re-crawl *(needs `--authorized`)* |
 | Sniper | `sniper` | Runs recon + detection tools and aggregates findings into one report |
+| Nuclei (templates) | `nuclei` | Template-based scanning via the external [nuclei](https://github.com/projectdiscovery/nuclei) engine *(optional; needs `--authorized`)* |
+| Nmap (service scan) | `nmapscan` | Deep port + service/version detection via external `nmap` *(optional; needs `--authorized`)* |
 
 ```bash
 webscan run ssl example.com
@@ -127,11 +129,48 @@ Website scans also get a **security grade (A-F)** with a shareable SVG badge
 (`/report/<id>/badge.svg`) and a **compliance mapping** view
 (`/report/<id>/compliance`) that ties findings to OWASP Top 10, PCI-DSS and ASVS.
 
-**Active tools send requests to the target.** `xss`, `sqli` and `sniper` are
-gated: they refuse to run without `--authorized` (CLI) or the authorization
-checkbox (web UI). The Sniper aggregator is a discovery-and-detection tool only
+**Active tools send requests to the target.** `xss`, `sqli`, `ssti`, `cmdi`,
+`lfi`, `storedxss`, `sniper`, `nuclei` and `nmapscan` are gated: they refuse to
+run without `--authorized` (CLI) or the authorization checkbox (web UI). The Sniper aggregator is a discovery-and-detection tool only
 — it never delivers exploit payloads, obtains shells, or reads the target
 filesystem.
+
+### Optional external engines (nuclei, nmap)
+
+webscan-light is a **from-scratch scanner, not a wrapper** — every native check
+is our own Python, the port scanner uses raw sockets, and CVE enrichment comes
+straight from the NVD/EPSS/KEV/OSV feeds. But two best-in-class open-source tools
+add depth we would never reproduce by hand, so they are available as **optional,
+opt-in adapters**:
+
+- **`nuclei`** — [ProjectDiscovery's](https://github.com/projectdiscovery/nuclei)
+  9,000+ community templates with fresh CVE PoCs.
+- **`nmapscan`** — `nmap` service/version detection (`-sV`) for accurate
+  fingerprinting.
+
+They are **detect-if-present**: if the binary isn't installed the tool returns
+install guidance and is skipped — the native engine always works without them.
+When present, their findings are normalised into the same report, severity
+scoring and OWASP mapping as everything else. Both are active/intrusive, so they
+require `--authorized` (CLI) or the authorization checkbox (UI), are
+rate-limited, and are bounded by a time budget.
+
+```bash
+webscan run nuclei https://example.com --authorized
+webscan run nmapscan example.com --ports top1000 --authorized
+```
+
+The default install and Docker image stay lean and pull in **neither** tool. To
+get both pre-installed (nmap + nuclei with templates baked in), use the **full**
+image:
+
+```bash
+docker run -d -p 127.0.0.1:8000:8000 ghcr.io/lewisjohnvillamor/webscan-light:latest-full
+# or build it: docker build -f Dockerfile.full -t webscan-light:full .
+```
+
+nmap's licence (NPSL) restricts redistribution, so the full image installs it
+from Debian's package repository rather than vendoring it; nuclei is MIT.
 
 ### Keeping CVE data current
 
