@@ -54,6 +54,7 @@
   <div class="checks">
     <label><input type="checkbox" name="force" value="true"> Force fresh scan (ignore cache)</label>
     <label><input type="checkbox" name="offline" value="true"> Offline (cached data only)</label>
+    <label><input type="checkbox" name="render" value="true"> Render JS (headless Chromium)</label>
     <label><input type="checkbox" name="insecure" value="true"> Skip TLS verification</label>
     {% if card.id == "sqli" %}<label><input type="checkbox" name="time_based" value="true"> Enable time-based probe</label>{% endif %}
   </div>

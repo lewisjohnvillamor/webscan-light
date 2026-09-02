@@ -95,7 +95,7 @@ def run(target: str, options: ToolOptions) -> ToolReport:
         checks.append(["Host header", "OK", "not reflected"])
 
     # ---- Open redirect + CRLF (need parameters) ----
-    points = discover(client, base, max_pages=options.max_items or 8, max_depth=2)
+    points = discover(client, base, max_pages=options.max_items or 8, max_depth=2, render=options.render)
     redirect_hit = crlf_hit = False
     for pt in points:
         if pt.param.lower() in REDIRECT_PARAMS and not redirect_hit:

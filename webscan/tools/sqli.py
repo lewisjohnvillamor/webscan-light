@@ -53,7 +53,7 @@ def run(target: str, options: ToolOptions) -> ToolReport:
         return report.finish("Blocked")
 
     client = HttpClient(timeout=max(options.timeout, 12), verify_tls=options.verify_tls, delay=options.delay)
-    points = discover(client, base, max_pages=options.max_items or 10, max_depth=2)
+    points = discover(client, base, max_pages=options.max_items or 10, max_depth=2, render=options.render)
     report.stats = [("Injection points", str(len(points)))]
     if not points:
         report.sections.append(Section(title="Injection points",

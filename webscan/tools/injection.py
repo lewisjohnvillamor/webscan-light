@@ -26,9 +26,10 @@ class InjectionPoint:
         return "POST", self.url, params
 
 
-def discover(client: HttpClient, target: str, max_pages: int, max_depth: int) -> list[InjectionPoint]:
+def discover(client: HttpClient, target: str, max_pages: int, max_depth: int,
+             render: bool = False) -> list[InjectionPoint]:
     """Crawl the target and enumerate GET/POST parameters worth testing."""
-    result = crawl(client, target, max_pages=max_pages, max_depth=max_depth)
+    result = crawl(client, target, max_pages=max_pages, max_depth=max_depth, render=render)
     points: list[InjectionPoint] = []
     seen: set[tuple] = set()
 

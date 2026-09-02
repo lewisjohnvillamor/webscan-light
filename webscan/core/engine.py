@@ -32,6 +32,7 @@ class ScanOptions:
     offline: bool = False
     min_cvss: float = 0.0
     delay: float = 0.0
+    render: bool = False
     user_agent: str | None = None
     extra_headers: dict[str, str] = field(default_factory=dict)
     only: list[str] = field(default_factory=list)
@@ -58,7 +59,8 @@ def run_scan(options: ScanOptions, progress: ProgressHook | None = None) -> Scan
             progress(stage, done, total)
 
     report("Crawling", 0, 1)
-    crawl_result = crawl(client, target, max_pages=options.max_pages, max_depth=options.max_depth)
+    crawl_result = crawl(client, target, max_pages=options.max_pages, max_depth=options.max_depth,
+                         render=options.render)
     if not crawl_result.pages:
         probe = client.get(target)
         result.status = "Failed"
