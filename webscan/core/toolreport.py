@@ -22,6 +22,7 @@ class Section:
     table: Table | None = None
     kv: list[tuple[str, str]] = field(default_factory=list)
     body: str = ""
+    images: list[tuple[str, str]] = field(default_factory=list)
     severity: Severity | None = None
 
     def as_dict(self) -> dict[str, Any]:
@@ -31,6 +32,7 @@ class Section:
             "table": self.table.as_dict() if self.table else None,
             "kv": [list(pair) for pair in self.kv],
             "body": self.body,
+            "images": [list(i) for i in self.images],
             "severity": self.severity.label if self.severity else None,
         }
 

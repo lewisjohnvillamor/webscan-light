@@ -150,6 +150,10 @@
   pre.exchange{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:12px;
     font:11.5px/1.6 var(--mono);overflow-x:auto;margin:6px 0;white-space:pre-wrap}
 
+  .shots{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px;margin:6px 0}
+  .shot{margin:0;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--card);box-shadow:var(--shadow)}
+  .shot img{display:block;width:100%;height:auto;border-bottom:1px solid var(--line-soft)}
+  .shot figcaption{font:11.5px var(--mono);color:var(--muted);padding:7px 10px;word-break:break-all}
   .empty-state{text-align:center;padding:40px;color:var(--muted);background:var(--card);
     border:1px solid var(--line);border-radius:var(--radius);font-size:13.5px}
 

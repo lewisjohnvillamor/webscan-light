@@ -8,6 +8,7 @@ failure falls back to the raw HTTP response.
 """
 from __future__ import annotations
 
+import base64
 import subprocess  # nosec B404: fixed argv list, no shell
 import tempfile
 from pathlib import Path
@@ -66,3 +67,19 @@ def screenshot(url: str, out_path: str | Path, timeout: float = 20.0,
         except (subprocess.TimeoutExpired, OSError):
             return None
     return out if out.exists() and out.stat().st_size > 0 else None
+
+
+def screenshot_data_uri(url: str, timeout: float = 20.0, width: int = 900, height: int = 560,
+                        wait_ms: int = 3000) -> str | None:
+    """Capture a screenshot and return it as a data: URI (or None on failure)."""
+    import tempfile as _t
+    from pathlib import Path as _P
+    with _t.TemporaryDirectory() as d:
+        out = _P(d) / "shot.png"
+        got = screenshot(url, out, timeout=timeout, width=width, height=height, wait_ms=wait_ms)
+        if not got:
+            return None
+        raw = out.read_bytes()
+    if len(raw) > 1_500_000:  # keep reports lean
+        return None
+    return "data:image/png;base64," + base64.b64encode(raw).decode()

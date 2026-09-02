@@ -109,6 +109,14 @@
     </div>
   </div>
   {% endif %}
+  {% if section.images %}
+  <div class="shots">
+    {% for label, uri in section.images %}
+    <figure class="shot"><img src="{{ uri }}" alt="{{ label }}" loading="lazy">
+      <figcaption>{{ label }}</figcaption></figure>
+    {% endfor %}
+  </div>
+  {% endif %}
   {% if section.body %}<div class="card panel-card"><pre class="exchange" style="border:0;background:none;padding:0">{{ section.body }}</pre></div>{% endif %}
   {% endfor %}
 

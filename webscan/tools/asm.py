@@ -80,6 +80,17 @@ def run(target: str, options: ToolOptions) -> ToolReport:
                                      "detection.",
                     recommendation="Confirm this service should be exposed."))
 
+    # Optional screenshots of live hosts (browser features, bounded).
+    if options.render:
+        from webscan.core.render import screenshot_data_uri
+        shots: list[tuple[str, str]] = []
+        for host in hostnames[: (options.max_items or 6)]:
+            uri = screenshot_data_uri(f"https://{host}", timeout=options.timeout)
+            if uri:
+                shots.append((host, uri))
+        if shots:
+            report.sections.append(Section(title=f"Screenshots ({len(shots)})", images=shots))
+
     report.sections.append(Section(
         title="Modules", intro="Attack-surface inventory. Schedule this tool to be alerted when "
                                "your exposure changes (new host, new port, new finding).",

@@ -89,7 +89,7 @@ and testing suite. Run `webscan tools` to list them.
 | Cloud Storage Exposure | `cloud` | Public S3/GCS/Azure buckets guessed from the domain |
 | Secrets Scanner | `secrets` | Hard-coded credentials/keys/tokens in a local codebase |
 | Typosquat Monitor | `typosquat` | Registered, live look-alike domains (brand protection) |
-| Attack Surface Monitor | `asm` | Inventory subdomains/ports/TLS/DNS; schedule it for change alerts |
+| Attack Surface Monitor | `asm` | Inventory subdomains/ports/TLS/DNS (+ host screenshots with `--render`); schedule it for change alerts |
 | SSTI Detector | `ssti` | Server-side template injection (7*7=49 probe) *(needs `--authorized`)* |
 | Command Injection | `cmdi` | OS command injection, output + time based *(needs `--authorized`)* |
 | LFI / Path Traversal | `lfi` | Local file inclusion / path traversal *(needs `--authorized`)* |

@@ -147,3 +147,17 @@ def test_typosquat_variants():
     assert "gogle.com" in v          # omission
     assert any(d.endswith(".net") for d in v)  # TLD swap
     assert "google.com" not in v     # excludes the original
+
+
+def test_section_images_render_in_report():
+    from webscan.core.toolreport import Section, ToolReport
+    from webscan.report import generic
+    report = ToolReport(tool="asm", tool_name="Attack Surface Monitor", target="example.com")
+    tiny_png = ("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1"
+                "HAwCAAAAC0lEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==")
+    report.sections = [Section("Screenshots (1)", images=[("host.example.com", tiny_png)])]
+    report.finish()
+    html = generic.render(report)
+    assert 'class="shot"' in html
+    assert 'src="data:image/png;base64,' in html
+    assert "host.example.com" in html
