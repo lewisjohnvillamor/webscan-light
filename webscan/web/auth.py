@@ -20,7 +20,7 @@ from starlette.responses import JSONResponse, RedirectResponse
 COOKIE = "webscan_auth"
 # Paths reachable without auth: login, health, and the logger capture URLs
 # (they carry their own unguessable token and are meant for external callers).
-EXEMPT_PREFIXES = ("/login", "/health", "/logger/")
+EXEMPT_PREFIXES = ("/login", "/health", "/robots.txt", "/logger/")
 
 
 def configured_token() -> str:

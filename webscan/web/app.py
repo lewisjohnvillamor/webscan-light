@@ -38,6 +38,7 @@ from webscan.tools.base import ToolOptions, all_tools, get_tool, load_tools
 from . import auth
 from .consent import ConsentMiddleware
 from .logger_store import LoggedRequest, LoggerStore
+from .security import SecurityHeadersMiddleware
 from .store import JobStore
 
 BASE_DIR = Path(__file__).parent
@@ -236,6 +237,11 @@ async def report_pdf(request: Request):
 async def health(request: Request):
     return JSONResponse({"status": "ok", "version": __version__,
                          "tools": len(all_tools()) + 1, "jobs": len(jobs.recent(1000))})
+
+
+async def robots(request: Request):
+    # A self-hosted scanner should never be search-indexed if accidentally exposed.
+    return PlainTextResponse("User-agent: *\nDisallow: /\n")
 
 
 # ---- HTTP request logger -------------------------------------------------
@@ -478,6 +484,7 @@ _CAPTURE_METHODS = ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD"]
 routes = [
     Route("/", index),
     Route("/health", health),
+    Route("/robots.txt", robots),
     Route("/login", login, methods=["GET", "POST"]),
     Route("/consent", consent, methods=["GET", "POST"]),
     Route("/history", history_page),
@@ -522,5 +529,8 @@ async def _lifespan(app):
         _scheduler.stop()
 
 
-app = Starlette(routes=routes, middleware=[Middleware(auth.AuthMiddleware), Middleware(ConsentMiddleware)],
+app = Starlette(routes=routes,
+                middleware=[Middleware(SecurityHeadersMiddleware),
+                            Middleware(auth.AuthMiddleware),
+                            Middleware(ConsentMiddleware)],
                 lifespan=_lifespan)
