@@ -33,6 +33,7 @@ class ScanOptions:
     min_cvss: float = 0.0
     delay: float = 0.0
     render: bool = False
+    respect_robots: bool = False
     cookie: str = ""
     login_url: str = ""
     login_data: str = ""
@@ -66,7 +67,7 @@ def run_scan(options: ScanOptions, progress: ProgressHook | None = None) -> Scan
 
     report("Crawling", 0, 1)
     crawl_result = crawl(client, target, max_pages=options.max_pages, max_depth=options.max_depth,
-                         render=options.render)
+                         render=options.render, respect_robots=options.respect_robots)
     if not crawl_result.pages:
         probe = client.get(target)
         result.status = "Failed"

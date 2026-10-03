@@ -5,8 +5,7 @@ A free, self-hosted website vulnerability scanner that produces a full
 commercial light scanners, with no account, no quota and no data leaving your
 machine.
 
-Use it from the **CLI** or the **web UI**. Reports export to **HTML, PDF, JSON
-and SARIF**.
+Use it from the **CLI** or the **web UI**. Reports export to **HTML, PDF, JSON, SARIF and CSV**.
 
 ```
 Overall risk level   High
@@ -217,6 +216,8 @@ webscan scan example.com -f html -o report.html --open
 webscan scan example.com -f pdf  -o report.pdf
 webscan scan example.com -f json -o report.json
 webscan scan example.com -f sarif -o report.sarif # for GitHub code scanning
+webscan scan example.com -f csv  -o findings.csv   # findings for spreadsheets/triage
+webscan scan example.com --respect-robots           # honour robots.txt (polite runs)
 webscan list-tests                                # every test and its id
 ```
 

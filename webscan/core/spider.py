@@ -145,10 +145,20 @@ def crawl(
     max_pages: int = 15,
     max_depth: int = 2,
     render: bool = False,
+    respect_robots: bool = False,
 ) -> CrawlResult:
     result = CrawlResult()
     seen: set[str] = set()
     queue: deque[tuple[str, int]] = deque([(start_url, 0)])
+
+    policy = None
+    if respect_robots:
+        from .robots import RobotsPolicy
+        policy = RobotsPolicy.fetch(client, start_url, client.user_agent)
+        # Seed same-origin sitemap URLs for better coverage when respecting robots.
+        for sm in policy.sitemaps[:5]:
+            if same_origin(start_url, sm):
+                queue.append((sm, max_depth))
 
     while queue and len(result.pages) < max_pages:
         url, depth = queue.popleft()
@@ -157,6 +167,8 @@ def crawl(
             continue
         seen.add(url)
         if urlparse(url).path.lower().endswith(SKIP_EXTENSIONS):
+            continue
+        if policy is not None and not policy.allowed(url):
             continue
 
         response = client.get(url, cache=True)
