@@ -3,6 +3,7 @@ from . import (  # noqa: F401
     apiscan,
     asm,
     cloud,
+    codescan,
     deps,
     dns_email,
     dorks,
