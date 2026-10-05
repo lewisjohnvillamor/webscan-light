@@ -4,6 +4,38 @@
 {% set needs_ports = card.id in ["ports","network"] %}
 {% set needs_wordlist = card.id in ["urlfuzzer","subdomains","vhosts","takeover"] %}
 {% set is_active = card.active %}
+
+{% if card.local_fs %}
+<form class="card pad" method="post" action="/upload/{{ card.id }}" enctype="multipart/form-data">
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+    <div class="ico" style="width:42px;height:42px;font:600 13px/1 var(--mono);letter-spacing:.04em;color:var(--muted);background:var(--panel);border:1px solid var(--line);border-radius:10px;display:grid;place-items:center">{{ card.code }}</div>
+    <div>
+      <h2 style="margin:0">{{ card.name }}</h2>
+      <div class="hint" style="margin:2px 0 0">{{ card.description }}</div>
+    </div>
+  </div>
+
+  {% if error %}<div class="notice warn">{{ error }}</div>{% endif %}
+  <div class="notice">This tool scans a codebase. Upload a <strong>.zip</strong> of your project — it is
+  extracted into an isolated, size-limited sandbox, scanned, and <strong>deleted immediately after</strong>.
+  The server's own filesystem is never read. (CLI equivalent: <code>webscan run {{ card.id }} /path</code>.)</div>
+
+  <div class="field">
+    <label for="archive">Project archive (.zip)</label>
+    <input type="file" id="archive" name="archive" accept=".zip,application/zip" required>
+  </div>
+  <div class="row">
+    <div class="field">
+      <label for="max_items">Max files (0 = default)</label>
+      <input type="number" id="max_items" name="max_items" value="0" min="0" max="20000">
+    </div>
+  </div>
+
+  <button type="submit">Upload &amp; scan →</button>
+  <a class="btn secondary" href="/">Cancel</a>
+</form>
+
+{% else %}
 <form class="card pad" method="post" action="/tool/{{ card.id }}">
   <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
     <div class="ico" style="width:42px;height:42px;font:600 13px/1 var(--mono);letter-spacing:.04em;color:var(--muted);background:var(--panel);border:1px solid var(--line);border-radius:10px;display:grid;place-items:center">{{ card.code }}</div>
@@ -14,7 +46,6 @@
   </div>
 
   {% if error %}<div class="notice warn">{{ error }}</div>{% endif %}
-  {% if card.local_fs %}<div class="notice warn">This tool reads the local filesystem and is <strong>disabled in the web UI</strong>. Run it from the CLI: <code>webscan run {{ card.id }} /path</code>.</div>{% endif %}
   {% if is_active %}
   <div class="notice warn">This tool sends active requests to the target. Only run it against systems you own or have explicit written permission to test.</div>
   {% endif %}
@@ -73,4 +104,5 @@
   <button type="submit">Start scan →</button>
   <a class="btn secondary" href="/">Cancel</a>
 </form>
+{% endif %}
 {% endblock %}

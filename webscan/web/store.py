@@ -89,6 +89,20 @@ class JobStore:
         self._pool.submit(self._run_tool, job, spec, target, options)
         return job
 
+    def start_upload(self, tool_id: str, scan_dir: str, display: str,
+                     options: ToolOptions, cleanup_dir: str) -> Job:
+        """Run a local-fs tool against an extracted upload, then delete the temp dir.
+
+        The tool scans ``scan_dir`` but the job/report show ``display`` (the
+        uploaded filename) so the server's temp path never leaks into results.
+        """
+        spec = get_tool(tool_id)
+        job = Job(id=uuid.uuid4().hex[:12], kind="tool", tool_id=tool_id,
+                  tool_name=spec.name if spec else tool_id, target=display)
+        self._add(job)
+        self._pool.submit(self._run_tool, job, spec, scan_dir, options, display, cleanup_dir)
+        return job
+
     def _run_website(self, job: Job, options: ScanOptions) -> None:
         job.state = "running"
 
@@ -106,13 +120,19 @@ class JobStore:
         except Exception as exc:  # noqa: BLE001
             job.state, job.error = "failed", f"{type(exc).__name__}: {exc}"
 
-    def _run_tool(self, job: Job, spec, target: str, options: ToolOptions) -> None:
+    def _run_tool(self, job: Job, spec, target: str, options: ToolOptions,
+                  display: str | None = None, cleanup_dir: str | None = None) -> None:
         job.state = "running"
         if not spec:
             job.state, job.error = "failed", f"unknown tool '{job.tool_id}'"
             return
         try:
             report: ToolReport = spec.func(target, options)
+            if display is not None:
+                # Don't leak the server temp path anywhere in the report.
+                report.target = display
+                report.params = [(k, display if v == target else v.replace(target, display))
+                                 for (k, v) in report.params]
             job.result = report
             if report.status == "Blocked":
                 job.state, job.error = "blocked", (report.errors[0] if report.errors else "blocked")
@@ -123,6 +143,10 @@ class JobStore:
                 _persist(job)
         except Exception as exc:  # noqa: BLE001
             job.state, job.error = "failed", f"{type(exc).__name__}: {exc}"
+        finally:
+            if cleanup_dir:
+                import shutil
+                shutil.rmtree(cleanup_dir, ignore_errors=True)
 
     def get(self, job_id: str) -> Job | None:
         return self._jobs.get(job_id)

@@ -102,7 +102,7 @@ and testing suite. Run `webscan tools` to list them.
 | Web Misconfig Scanner | `webmisc` | CORS, clickjacking, open redirect, host-header and CRLF injection |
 | Cloud Storage Exposure | `cloud` | Public S3/GCS/Azure buckets guessed from the domain |
 | Secrets Scanner | `secrets` | Hard-coded credentials/keys/tokens in a local codebase |
-| Code Security Scan | `code` | Point it at a folder: supply-chain / npm-poisoning, SAST, IaC & secrets in one report *(CLI only)* |
+| Code Security Scan | `code` | Point it at a folder (CLI) or upload a project `.zip` (web UI): supply-chain / npm-poisoning, SAST, IaC & secrets in one report |
 | Typosquat Monitor | `typosquat` | Registered, live look-alike domains (brand protection) |
 | Attack Surface Monitor | `asm` | Inventory subdomains/ports/TLS/DNS (+ host screenshots with `--render`); schedule it for change alerts |
 | SSTI Detector | `ssti` | Server-side template injection (7*7=49 probe) *(needs `--authorized`)* |
@@ -248,6 +248,12 @@ webscan serve --port 9000
 Enter a target, watch the progress bar, then read the report inline or download
 it as PDF/JSON/SARIF. The UI binds to **loopback only** by default — see
 [Exposure](#exposure) before changing that.
+
+**Code scanning in the UI.** The filesystem tools (`code`, `secrets`, `deps`)
+never read the server's own disk. Instead their forms take a **project `.zip`
+upload**, which is extracted into an isolated, size-limited sandbox (with
+Zip-Slip and zip-bomb guards), scanned, and **deleted immediately after** — so
+the server filesystem is never exposed.
 
 ## Docker
 
