@@ -5,8 +5,7 @@ A free, self-hosted website vulnerability scanner that produces a full
 commercial light scanners, with no account, no quota and no data leaving your
 machine.
 
-Use it from the **CLI** or the **web UI**. Reports export to **HTML, PDF, JSON
-and SARIF**.
+Use it from the **CLI** or the **web UI**. Reports export to **HTML, PDF, JSON, SARIF and CSV**.
 
 ```
 Overall risk level   High
@@ -103,6 +102,7 @@ and testing suite. Run `webscan tools` to list them.
 | Web Misconfig Scanner | `webmisc` | CORS, clickjacking, open redirect, host-header and CRLF injection |
 | Cloud Storage Exposure | `cloud` | Public S3/GCS/Azure buckets guessed from the domain |
 | Secrets Scanner | `secrets` | Hard-coded credentials/keys/tokens in a local codebase |
+| Code Security Scan | `code` | Point it at a folder (CLI) or upload a project `.zip` (web UI): supply-chain / npm-poisoning, SAST, IaC & secrets in one report |
 | Typosquat Monitor | `typosquat` | Registered, live look-alike domains (brand protection) |
 | Attack Surface Monitor | `asm` | Inventory subdomains/ports/TLS/DNS (+ host screenshots with `--render`); schedule it for change alerts |
 | SSTI Detector | `ssti` | Server-side template injection (7*7=49 probe) *(needs `--authorized`)* |
@@ -121,6 +121,7 @@ webscan run sqli "https://example.com/item?id=1" --authorized
 webscan run sniper example.com -f pdf -o sniper.pdf
 webscan run deps ./my-project           # scan a codebase's dependencies
 webscan run secrets ./my-project        # find hard-coded secrets
+webscan run code ./my-project           # full code scan: supply-chain + SAST + IaC + secrets
 webscan run dnsemail example.com        # email/DNS security posture
 webscan run asm example.com             # attack-surface inventory
 ```
@@ -217,6 +218,8 @@ webscan scan example.com -f html -o report.html --open
 webscan scan example.com -f pdf  -o report.pdf
 webscan scan example.com -f json -o report.json
 webscan scan example.com -f sarif -o report.sarif # for GitHub code scanning
+webscan scan example.com -f csv  -o findings.csv   # findings for spreadsheets/triage
+webscan scan example.com --respect-robots           # honour robots.txt (polite runs)
 webscan list-tests                                # every test and its id
 ```
 
@@ -245,6 +248,12 @@ webscan serve --port 9000
 Enter a target, watch the progress bar, then read the report inline or download
 it as PDF/JSON/SARIF. The UI binds to **loopback only** by default — see
 [Exposure](#exposure) before changing that.
+
+**Code scanning in the UI.** The filesystem tools (`code`, `secrets`, `deps`)
+never read the server's own disk. Instead their forms take a **project `.zip`
+upload**, which is extracted into an isolated, size-limited sandbox (with
+Zip-Slip and zip-bomb guards), scanned, and **deleted immediately after** — so
+the server filesystem is never exposed.
 
 ## Docker
 

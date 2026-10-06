@@ -38,6 +38,7 @@ from webscan.tools.base import ToolOptions, all_tools, get_tool, load_tools
 from . import auth
 from .consent import ConsentMiddleware
 from .logger_store import LoggedRequest, LoggerStore
+from .security import SecurityHeadersMiddleware
 from .store import JobStore
 
 BASE_DIR = Path(__file__).parent
@@ -161,6 +162,56 @@ async def start(request: Request):
     return RedirectResponse(url=f"/job/{job.id}", status_code=303)
 
 
+UPLOAD_TOOLS = {"code", "secrets", "deps"}
+
+
+async def upload_scan(request: Request):
+    """Safe UI flow for local-filesystem tools: upload a project .zip, scan the
+    extracted copy in an isolated temp dir, then delete it. Never reads the
+    server's own filesystem."""
+    tool_id = request.path_params["tool_id"]
+    spec = get_tool(tool_id)
+    if not spec or not spec.local_fs or tool_id not in UPLOAD_TOOLS:
+        raise HTTPException(status_code=404, detail="unknown tool")
+
+    form = await request.form()
+    upload = form.get("archive")
+    if upload is None or not getattr(upload, "filename", ""):
+        return _tool_error(request, tool_id, "Choose a .zip of your project to scan.")
+    if not upload.filename.lower().endswith(".zip"):
+        return _tool_error(request, tool_id, "Please upload a .zip archive.")
+
+    from .uploads import MAX_ZIP_BYTES, UploadError, extract_zip
+    tmp_root = tempfile.mkdtemp(prefix="webscan-upload-")
+    zip_path = os.path.join(tmp_root, "upload.zip")
+    scan_dir = os.path.join(tmp_root, "src")
+    try:
+        size = 0
+        with open(zip_path, "wb") as fh:
+            while True:
+                chunk = await upload.read(1024 * 1024)
+                if not chunk:
+                    break
+                size += len(chunk)
+                if size > MAX_ZIP_BYTES:
+                    raise UploadError("Upload exceeds the size limit.")
+                fh.write(chunk)
+        extract_zip(zip_path, scan_dir)
+        os.remove(zip_path)
+    except UploadError as exc:
+        import shutil
+        shutil.rmtree(tmp_root, ignore_errors=True)
+        return _tool_error(request, tool_id, str(exc))
+    except Exception as exc:  # noqa: BLE001
+        import shutil
+        shutil.rmtree(tmp_root, ignore_errors=True)
+        return _tool_error(request, tool_id, f"Could not read the archive: {exc}")
+
+    options = ToolOptions(max_items=int(form.get("max_items") or 0))
+    job = jobs.start_upload(tool_id, scan_dir, upload.filename, options, cleanup_dir=tmp_root)
+    return RedirectResponse(url=f"/job/{job.id}", status_code=303)
+
+
 async def job_page(request: Request):
     job = _job_or_404(request.path_params["job_id"])
     if job.state in ("queued", "running"):
@@ -236,6 +287,11 @@ async def report_pdf(request: Request):
 async def health(request: Request):
     return JSONResponse({"status": "ok", "version": __version__,
                          "tools": len(all_tools()) + 1, "jobs": len(jobs.recent(1000))})
+
+
+async def robots(request: Request):
+    # A self-hosted scanner should never be search-indexed if accidentally exposed.
+    return PlainTextResponse("User-agent: *\nDisallow: /\n")
 
 
 # ---- HTTP request logger -------------------------------------------------
@@ -478,6 +534,7 @@ _CAPTURE_METHODS = ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD"]
 routes = [
     Route("/", index),
     Route("/health", health),
+    Route("/robots.txt", robots),
     Route("/login", login, methods=["GET", "POST"]),
     Route("/consent", consent, methods=["GET", "POST"]),
     Route("/history", history_page),
@@ -494,6 +551,7 @@ routes = [
     Route("/report/{scan_id}", stored_html),
     Route("/tool/{tool_id}", tool_form),
     Route("/tool/{tool_id}", start, methods=["POST"]),
+    Route("/upload/{tool_id}", upload_scan, methods=["POST"]),
     Route("/job/{job_id}", job_page),
     Route("/stored/{scan_id}", stored_result),
     Route("/api/job/{job_id}", job_status),
@@ -522,5 +580,8 @@ async def _lifespan(app):
         _scheduler.stop()
 
 
-app = Starlette(routes=routes, middleware=[Middleware(auth.AuthMiddleware), Middleware(ConsentMiddleware)],
+app = Starlette(routes=routes,
+                middleware=[Middleware(SecurityHeadersMiddleware),
+                            Middleware(auth.AuthMiddleware),
+                            Middleware(ConsentMiddleware)],
                 lifespan=_lifespan)

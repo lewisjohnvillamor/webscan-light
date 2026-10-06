@@ -169,3 +169,16 @@ def test_consent_next_blocks_open_redirect(monkeypatch):
         r = c.post("/consent", data={"next": "/schedules"}, follow_redirects=False)
         assert r.headers["location"] == "/schedules"
     monkeypatch.setenv("WEBSCAN_NO_CONSENT", "1")
+
+
+def test_security_headers_present(client):
+    r = client.get("/health")
+    assert r.headers.get("X-Content-Type-Options") == "nosniff"
+    assert r.headers.get("X-Frame-Options") == "DENY"
+    assert r.headers.get("Referrer-Policy") == "no-referrer"
+
+
+def test_robots_disallows_indexing(client):
+    r = client.get("/robots.txt")
+    assert r.status_code == 200
+    assert "Disallow: /" in r.text

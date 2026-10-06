@@ -12,8 +12,8 @@ from webscan import __version__
 from webscan.core.engine import ScanOptions, run_scan
 from webscan.core.models import ScanResult, Severity
 from webscan.core.registry import all_checks, load_checks
+from webscan.report import csvout, jsonout, pdf, sarif
 from webscan.report import html as html_report
-from webscan.report import jsonout, pdf, sarif
 
 SEVERITY_BY_NAME = {s.name.lower(): s for s in Severity}
 
@@ -47,7 +47,7 @@ def build_parser() -> argparse.ArgumentParser:
     scan = subparsers.add_parser("scan", help="scan a website and produce a report")
     scan.add_argument("target", help="URL or hostname to scan")
     scan.add_argument("-f", "--format", default="terminal",
-                      choices=["terminal", "html", "pdf", "json", "sarif"],
+                      choices=["terminal", "html", "pdf", "json", "sarif", "csv"],
                       help="report format (default: terminal)")
     scan.add_argument("-o", "--output", help="write the report to this path")
     scan.add_argument("--open", action="store_true", dest="open_report",
@@ -59,6 +59,8 @@ def build_parser() -> argparse.ArgumentParser:
     scan.add_argument("--delay", type=float, default=0.0,
                       help="min seconds between requests (politeness; avoids rate-limits/bans)")
     scan.add_argument("--render", action="store_true", help="render pages with headless Chromium (JS/SPA support)")  # noqa: E501
+    scan.add_argument("--respect-robots", action="store_true",
+                      help="honour the target's robots.txt (polite, production-safe runs)")
     scan.add_argument("--insecure", action="store_true",
                       help="do not verify the target's TLS certificate")
     scan.add_argument("--offline", action="store_true",
@@ -99,7 +101,7 @@ def build_parser() -> argparse.ArgumentParser:
     run_p.add_argument("tool", help="tool id, e.g. ssl, ports, subdomains, xss")
     run_p.add_argument("target", help="URL, hostname, IP or CIDR (depends on the tool)")
     run_p.add_argument("-f", "--format", default="terminal",
-                       choices=["terminal", "html", "pdf", "json"], help="report format")
+                       choices=["terminal", "html", "pdf", "json", "csv"], help="report format")
     run_p.add_argument("-o", "--output", help="write the report to this path")
     run_p.add_argument("--open", action="store_true", dest="open_report",
                        help="open the generated report")
@@ -322,11 +324,14 @@ def cmd_run(args: argparse.Namespace) -> int:
     if fmt == "terminal":
         _print_tool_terminal(report)
     else:
-        extension = {"html": "html", "pdf": "pdf", "json": "json"}[fmt]
+        extension = {"html": "html", "pdf": "pdf", "json": "json", "csv": "csv"}[fmt]
         if args.output:
             output = Path(args.output)
-        elif fmt == "json" and not sys.stdout.isatty():
-            print(generic.render_json(report))
+        elif fmt in ("json", "csv") and not sys.stdout.isatty():
+            if fmt == "csv":
+                print(csvout.render_csv(report), end="")
+            else:
+                print(generic.render_json(report))
             return _tool_exit(report, args)
         else:
             output = _default_output(f"{spec.id}-{report.target}", extension)
@@ -334,6 +339,8 @@ def cmd_run(args: argparse.Namespace) -> int:
             generic.write(report, output)
         elif fmt == "json":
             output.write_text(generic.render_json(report), encoding="utf-8")
+        elif fmt == "csv":
+            output.write_text(csvout.render_csv(report), encoding="utf-8")
         else:
             try:
                 pdf.html_to_pdf(generic.render(report), output)
@@ -448,6 +455,7 @@ def cmd_scan(args: argparse.Namespace) -> int:
         min_cvss=args.min_cvss,
         delay=args.delay,
         render=args.render,
+        respect_robots=args.respect_robots,
         cookie=args.cookie,
         login_url=args.login_url,
         login_data=args.login_data,
@@ -517,12 +525,15 @@ def _emit(result: ScanResult, args: argparse.Namespace) -> None:
         _print_terminal(result)
         return
 
-    extension = {"html": "html", "pdf": "pdf", "json": "json", "sarif": "sarif.json"}[fmt]
+    extension = {"html": "html", "pdf": "pdf", "json": "json", "sarif": "sarif.json", "csv": "csv"}[fmt]
     if args.output:
         output = Path(args.output)
-    elif fmt in ("json", "sarif") and not sys.stdout.isatty():
+    elif fmt in ("json", "sarif", "csv") and not sys.stdout.isatty():
         # Piped machine-readable output goes to stdout.
-        print(jsonout.render(result) if fmt == "json" else sarif.render(result))
+        if fmt == "csv":
+            print(csvout.render_csv(result), end="")
+        else:
+            print(jsonout.render(result) if fmt == "json" else sarif.render(result))
         return
     else:
         output = _default_output(result.target, extension)
@@ -533,6 +544,8 @@ def _emit(result: ScanResult, args: argparse.Namespace) -> None:
         jsonout.write(result, output)
     elif fmt == "sarif":
         sarif.write(result, output)
+    elif fmt == "csv":
+        output.write_text(csvout.render_csv(result), encoding="utf-8")
     else:
         try:
             pdf.write(result, output, include_exchanges=args.include_exchanges)
