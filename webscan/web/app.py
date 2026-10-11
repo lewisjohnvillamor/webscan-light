@@ -207,7 +207,11 @@ async def upload_scan(request: Request):
         shutil.rmtree(tmp_root, ignore_errors=True)
         return _tool_error(request, tool_id, f"Could not read the archive: {exc}")
 
-    options = ToolOptions(max_items=int(form.get("max_items") or 0))
+    try:
+        max_items = int(form.get("max_items") or 0)
+    except (TypeError, ValueError):
+        max_items = 0
+    options = ToolOptions(max_items=max_items)
     job = jobs.start_upload(tool_id, scan_dir, upload.filename, options, cleanup_dir=tmp_root)
     return RedirectResponse(url=f"/job/{job.id}", status_code=303)
 
