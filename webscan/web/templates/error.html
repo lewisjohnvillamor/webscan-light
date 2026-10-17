@@ -5,7 +5,7 @@
   <h2>{{ job.tool_name }} — {{ job.state }}</h2>
   <p><strong>{{ job.target }}</strong></p>
   <div class="notice {{ 'warn' if job.state=='blocked' else '' }}" style="margin-top:12px">{{ job.error }}</div>
-  <div class="actions" style="margin-top:16px">
+  <div class="actions">
     <a class="btn" href="/tool/{{ job.tool_id }}">Try again</a>
     <a class="btn secondary" href="/">All tools</a>
   </div>

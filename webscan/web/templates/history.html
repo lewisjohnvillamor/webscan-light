@@ -5,7 +5,8 @@
   <h2>Scan history</h2>
   <p class="hint" style="margin-top:0">Every finished scan is stored locally and can be re-opened or exported.</p>
   <form method="get" action="/history" style="display:flex;gap:10px;margin-top:12px">
-    <input type="text" name="q" value="{{ q }}" placeholder="Filter by target…" style="max-width:320px">
+    <label for="q" class="sr-only">Filter by target</label>
+    <input type="text" id="q" name="q" value="{{ q }}" placeholder="Filter by target…" style="max-width:320px">
     <button type="submit">Filter</button>
   </form>
 </div>
@@ -13,7 +14,7 @@
 {% if scans %}
 <div class="card pad">
   <table class="list">
-    <thead><tr><th>Tool</th><th>Target</th><th>Risk</th><th>Findings</th><th>When</th><th>Report</th></tr></thead>
+    <thead><tr><th scope="col">Tool</th><th scope="col">Target</th><th scope="col">Risk</th><th scope="col">Findings</th><th scope="col">When</th><th scope="col">Report</th></tr></thead>
     <tbody>
       {% for s in scans %}
       <tr>
@@ -24,7 +25,7 @@
         <td style="font-family:var(--mono);font-size:12px;color:var(--muted)">{{ s.created_at[:16]|replace("T"," ") }}</td>
         <td>
           <a href="/report/{{ s.id }}" target="_blank">HTML</a> ·
-          <a href="/report/{{ s.id }}.pdf">PDF</a> ·
+          {% if pdf_available %}<a href="/report/{{ s.id }}.pdf">PDF</a> · {% endif %}
           <a href="/report/{{ s.id }}.json">JSON</a>
         </td>
       </tr>

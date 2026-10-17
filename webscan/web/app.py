@@ -31,7 +31,7 @@ from webscan.core import scheduler as scheduler_mod
 from webscan.core.engine import ScanOptions
 from webscan.core.http import normalize_target
 from webscan.core.registry import load_checks
-from webscan.report import generic, jsonout, pdf, sarif
+from webscan.report import csvout, generic, jsonout, pdf, sarif
 from webscan.report import html as html_report
 from webscan.tools.base import ToolOptions, all_tools, get_tool, load_tools
 
@@ -270,6 +270,13 @@ async def report_json(request: Request):
                     headers={"Content-Disposition": f'attachment; filename="webscan-{job.id}.json"'})
 
 
+async def report_csv(request: Request):
+    job = _finished_or_404(request.path_params["job_id"])
+    body = csvout.render_csv(job.result)
+    return Response(body, media_type="text/csv",
+                    headers={"Content-Disposition": f'attachment; filename="webscan-{job.id}.csv"'})
+
+
 async def report_sarif(request: Request):
     job = _finished_or_404(request.path_params["job_id"])
     if job.kind != "website":
@@ -443,7 +450,8 @@ async def history_page(request: Request):
     q = request.query_params.get("q", "").strip()
     scans = history.list_scans(limit=200, target=q or None)
     return templates.TemplateResponse(request, "history.html",
-                                      {"version": __version__, "scans": scans, "q": q})
+                                      {"version": __version__, "scans": scans, "q": q,
+                                       "pdf_available": pdf.available()})
 
 
 def _stored_or_404(scan_id: str) -> dict:
@@ -561,6 +569,7 @@ routes = [
     Route("/api/job/{job_id}", job_status),
     Route("/job/{job_id}/report.html", report_html),
     Route("/job/{job_id}/report.json", report_json),
+    Route("/job/{job_id}/report.csv", report_csv),
     Route("/job/{job_id}/report.sarif", report_sarif),
     Route("/job/{job_id}/report.pdf", report_pdf),
     Route("/logger", logger_page),

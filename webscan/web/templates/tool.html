@@ -31,8 +31,10 @@
     </div>
   </div>
 
-  <button type="submit">Upload &amp; scan →</button>
-  <a class="btn secondary" href="/">Cancel</a>
+  <div class="actions">
+    <button type="submit">Upload &amp; scan →</button>
+    <a class="btn secondary" href="/">Cancel</a>
+  </div>
 </form>
 
 {% else %}
@@ -101,8 +103,10 @@
   </div>
   {% endif %}
 
-  <button type="submit">Start scan →</button>
-  <a class="btn secondary" href="/">Cancel</a>
+  <div class="actions">
+    <button type="submit">Start scan →</button>
+    <a class="btn secondary" href="/">Cancel</a>
+  </div>
 </form>
 {% endif %}
 {% endblock %}

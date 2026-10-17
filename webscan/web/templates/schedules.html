@@ -25,7 +25,7 @@
     <div class="row">
       <div class="field">
         <label for="tool_id">Tool</label>
-        <select id="tool_id" name="tool_id" style="width:100%;padding:11px 13px;font:14px var(--sans);color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:9px">
+        <select id="tool_id" name="tool_id">
           {% for c in cards %}<option value="{{ c.id }}">{{ c.name }}</option>{% endfor %}
         </select>
       </div>
@@ -46,7 +46,7 @@
 {% if schedules %}
 <div class="card pad">
   <table class="list">
-    <thead><tr><th>Tool</th><th>Target</th><th>Every</th><th>Last run</th><th>Next run</th><th></th></tr></thead>
+    <thead><tr><th scope="col">Tool</th><th scope="col">Target</th><th scope="col">Every</th><th scope="col">Last run</th><th scope="col">Next run</th><th scope="col"></th></tr></thead>
     <tbody>
       {% for s in schedules %}
       <tr>
@@ -58,7 +58,7 @@
         <td style="white-space:nowrap">
           {% if s.last_scan_id %}<a href="/report/{{ s.last_scan_id }}" target="_blank">last report</a> · {% endif %}
           <form method="post" action="/schedules/{{ s.id }}/run" style="display:inline"><button type="submit" class="btn secondary" style="padding:4px 10px;font-size:12px">Run now</button></form>
-          <form method="post" action="/schedules/{{ s.id }}/delete" style="display:inline"><button type="submit" class="btn secondary" style="padding:4px 10px;font-size:12px">Delete</button></form>
+          <form method="post" action="/schedules/{{ s.id }}/delete" style="display:inline" onsubmit="return confirm('Delete this schedule? This cannot be undone.')"><button type="submit" class="btn secondary" style="padding:4px 10px;font-size:12px">Delete</button></form>
         </td>
       </tr>
       {% endfor %}

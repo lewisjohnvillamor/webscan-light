@@ -13,20 +13,22 @@
 {% block content %}
 <div class="card pad">
   <h2><span class="spin"></span>{{ job.tool_name }} · {{ job.target }}</h2>
-  <div class="bar"><div id="fill"></div></div>
-  <div class="stage" id="stage">Starting…</div>
+  <div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="5"
+       id="bar"><div id="fill"></div></div>
+  <div class="stage" id="stage" aria-live="polite">Starting…</div>
   <p class="hint">This page refreshes automatically and opens the report when the scan finishes.</p>
 </div>
 {% endblock %}
 {% block scripts %}
 <script>
   const id={{ job.id|tojson }};
-  const fill=document.getElementById('fill'), stage=document.getElementById('stage');
+  const fill=document.getElementById('fill'), stage=document.getElementById('stage'), bar=document.getElementById('bar');
   async function poll(){
     try{
       const r=await fetch(`/api/job/${id}`); if(!r.ok) throw 0;
       const j=await r.json();
       fill.style.width=j.percent+'%';
+      bar.setAttribute('aria-valuenow', j.percent);
       stage.textContent=j.total?`${j.done} of ${j.total} checks complete`:(j.stage||'Working')+'…';
       if(['finished','failed','blocked'].includes(j.state)){location.reload();return;}
     }catch(e){stage.textContent='Reconnecting…';}

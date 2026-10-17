@@ -6,7 +6,6 @@
   .risk{font-size:30px;font-weight:800;line-height:1}
   .counts{display:flex;gap:15px;flex-wrap:wrap;font-size:13px}
   .counts b{font-variant-numeric:tabular-nums}
-  .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
   iframe.report{width:100%;height:80vh;border:1px solid var(--line);border-radius:var(--radius);
     background:#fff;margin-top:18px}
 </style>
@@ -33,6 +32,7 @@
     <a class="btn" href="/report/{{ job.id }}" target="_blank">Open full report ↗</a>
     {% if pdf_available %}<a class="btn secondary" href="/report/{{ job.id }}.pdf">Download PDF</a>{% endif %}
     <a class="btn secondary" href="/report/{{ job.id }}.json">JSON</a>
+    <a class="btn secondary" href="/report/{{ job.id }}.csv">CSV</a>
     {% if is_website %}<a class="btn secondary" href="/report/{{ job.id }}.sarif">SARIF</a>
     <a class="btn secondary" href="/report/{{ job.id }}/compliance" target="_blank">Compliance</a>{% endif %}
     <a class="btn secondary" href="/tool/{{ job.tool_id }}">Run again</a>
