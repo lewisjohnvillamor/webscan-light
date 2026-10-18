@@ -98,7 +98,7 @@
 
   {% if is_active %}
   <div class="checks">
-    <label style="font-weight:600"><input type="checkbox" name="authorized" value="true" {{ 'required' if card.id in ['xss','sqli'] else '' }}>
+    <label style="font-weight:600"><input type="checkbox" name="authorized" value="true" required>
       I am authorised to test this target</label>
   </div>
   {% endif %}

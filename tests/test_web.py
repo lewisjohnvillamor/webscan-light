@@ -223,3 +223,14 @@ def test_history_pdf_link_hidden_when_pdf_unavailable(client, monkeypatch):
     monkeypatch.setattr(pdf_mod, "available", lambda: True)
     r = client.get("/history")
     assert ".pdf\"" in r.text
+
+
+def test_authorization_checkbox_required_for_every_active_tool(client):
+    from webscan.tools.base import all_tools, load_tools
+    load_tools()
+    for spec in all_tools():
+        if not spec.active:
+            continue
+        r = client.get(f"/tool/{spec.id}")
+        assert r.status_code == 200
+        assert 'name="authorized" value="true" required' in r.text, spec.id
