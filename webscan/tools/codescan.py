@@ -250,11 +250,11 @@ IAC = [
 ]
 
 
-def _config_iac(base: Path, rel):
+def _config_iac(base: Path, rel, max_files: int = 20000):
     findings = []
     env_hits, docker_hits, unpinned = [], [], []
     iac_hits = {r[0]: [] for r in IAC}
-    for path in _iter_files(base, 20000):
+    for path in _iter_files(base, max_files):
         name = path.name
         low = name.lower()
         is_dockerfile = low == "dockerfile" or low.startswith("dockerfile.")
@@ -339,12 +339,9 @@ def run(target: str, options: ToolOptions) -> ToolReport:
     secret_hits: dict[str, list] = {}
     scanned = 0
     for path in _iter_files(base, max_files):
-        if path.suffix.lower() not in CODE_EXT and path.name not in (
-                ".env",) and not path.name.lower().startswith((".env", "dockerfile")):
-            # still scan generic text for secrets, but skip SAST on non-code
-            code_file = False
-        else:
-            code_file = path.suffix.lower() in CODE_EXT
+        # SAST patterns only make sense against actual source; secrets are
+        # still scanned in every text file (e.g. .env, Dockerfile, config).
+        code_file = path.suffix.lower() in CODE_EXT
         text = _read(path)
         if text is None:
             continue
@@ -370,7 +367,7 @@ def run(target: str, options: ToolOptions) -> ToolReport:
                 f"sast_{rid}", lbl, sev, sast_hits[rid],
                 f"{lbl}: a risky code pattern that frequently leads to vulnerabilities.", rec, cwe, ow))
     report.findings.extend(_supply_chain(base, rel))
-    report.findings.extend(_config_iac(base, rel))
+    report.findings.extend(_config_iac(base, rel, max_files))
     for label, hits in sorted(secret_hits.items()):
         sev = next(s for (lbl, _p, s) in SECRET_PATTERNS if lbl == label)
         report.findings.append(_finding(

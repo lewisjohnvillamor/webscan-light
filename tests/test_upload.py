@@ -86,3 +86,27 @@ def test_upload_unknown_tool_404():
                    files={"archive": ("x.zip", _zip_bytes({"a": "b"}), "application/zip")},
                    follow_redirects=False)
         assert r.status_code == 404
+
+
+def test_upload_bad_max_items_does_not_crash_or_leak(tmp_path, monkeypatch):
+    """A non-numeric max_items must not 500 and must not leave the temp dir behind."""
+    import glob
+
+    data = _zip_bytes({"proj/a.py": "x = 1\n"})
+    before = set(glob.glob("/tmp/webscan-upload-*")) | set(glob.glob(tempfile.gettempdir() + "/webscan-upload-*"))
+    with TestClient(app) as c:
+        r = c.post("/upload/code",
+                   files={"archive": ("proj.zip", data, "application/zip")},
+                   data={"max_items": "not-a-number"},
+                   follow_redirects=False)
+        assert r.status_code == 303  # falls back to 0 (unlimited), scan still starts
+        job = r.headers["location"].split("/job/")[1]
+        state = "queued"
+        for _ in range(50):
+            state = c.get(f"/api/job/{job}").json()["state"]
+            if state in ("finished", "failed", "blocked"):
+                break
+            time.sleep(0.2)
+        assert state == "finished"
+    after = set(glob.glob("/tmp/webscan-upload-*")) | set(glob.glob(tempfile.gettempdir() + "/webscan-upload-*"))
+    assert after == before  # no leaked temp dirs

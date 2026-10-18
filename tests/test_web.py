@@ -182,3 +182,55 @@ def test_robots_disallows_indexing(client):
     r = client.get("/robots.txt")
     assert r.status_code == 200
     assert "Disallow: /" in r.text
+
+
+def test_job_report_csv_download(client):
+    r = client.post("/tool/ssl", data={"target": "example.com", "timeout": "5", "offline": "true"},
+                    follow_redirects=False)
+    assert r.status_code == 303
+    job_id = r.headers["location"].split("/job/")[1]
+    assert _wait(client, job_id) == "finished"
+    csv = client.get(f"/job/{job_id}/report.csv")
+    assert csv.status_code == 200
+    assert csv.headers["content-type"].startswith("text/csv")
+    assert csv.text.startswith("target,")
+    assert "severity,confidence,title" in csv.text
+
+
+def test_login_token_field_is_password_type(monkeypatch):
+    monkeypatch.setenv("WEBSCAN_TOKEN", "a-test-token")
+    with TestClient(app) as c:
+        r = c.get("/login")
+        assert r.status_code == 200
+        assert 'type="password"' in r.text
+        assert 'autocomplete="current-password"' in r.text
+    monkeypatch.delenv("WEBSCAN_TOKEN", raising=False)
+
+
+def test_history_pdf_link_hidden_when_pdf_unavailable(client, monkeypatch):
+    # Ensure at least one stored scan exists.
+    r = client.post("/tool/ssl", data={"target": "example.com", "timeout": "5", "offline": "true"},
+                    follow_redirects=False)
+    job_id = r.headers["location"].split("/job/")[1]
+    assert _wait(client, job_id) == "finished"
+
+    from webscan.report import pdf as pdf_mod
+    monkeypatch.setattr(pdf_mod, "available", lambda: False)
+    r = client.get("/history")
+    assert r.status_code == 200
+    assert ".pdf\"" not in r.text
+
+    monkeypatch.setattr(pdf_mod, "available", lambda: True)
+    r = client.get("/history")
+    assert ".pdf\"" in r.text
+
+
+def test_authorization_checkbox_required_for_every_active_tool(client):
+    from webscan.tools.base import all_tools, load_tools
+    load_tools()
+    for spec in all_tools():
+        if not spec.active:
+            continue
+        r = client.get(f"/tool/{spec.id}")
+        assert r.status_code == 200
+        assert 'name="authorized" value="true" required' in r.text, spec.id

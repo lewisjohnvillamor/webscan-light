@@ -5,6 +5,7 @@ content-based test instead of each test re-fetching the site.
 """
 from __future__ import annotations
 
+import xml.etree.ElementTree as ET  # nosec B405: parsing our own fetched sitemap responses
 from collections import deque
 from dataclasses import dataclass, field
 from urllib.parse import parse_qsl, urldefrag, urlparse
@@ -104,6 +105,35 @@ def _parse_page(url: str, response: Response) -> Page:
     return page
 
 
+def _sitemap_urls(client: HttpClient, sitemap_url: str, _depth: int = 0) -> list[str]:
+    """Fetch a sitemap (or sitemap index) and return the page URLs it lists.
+
+    Sitemaps are XML, not HTML, so the normal page parser never extracts links
+    from them; this is a dedicated pass so robots.txt sitemaps actually widen
+    the crawl instead of consuming a page slot for nothing.
+    """
+    if _depth > 1:  # a sitemap index pointing at a sitemap index is unusual; bound it
+        return []
+    try:
+        response = client.get(sitemap_url, cache=True)
+    except Exception:  # noqa: BLE001
+        return []
+    if not response.ok or not response.text:
+        return []
+    try:
+        root = ET.fromstring(response.text)  # nosec B314: our own fetched sitemap XML
+    except ET.ParseError:
+        return []
+    tag = root.tag.rsplit("}", 1)[-1]  # strip the XML namespace
+    locs = [el.text.strip() for el in root.iter() if el.tag.rsplit("}", 1)[-1] == "loc" and el.text]
+    if tag == "sitemapindex":
+        urls: list[str] = []
+        for loc in locs[:10]:
+            urls.extend(_sitemap_urls(client, loc, _depth + 1))
+        return urls
+    return locs
+
+
 def _merge_rendered(page: Page, dom: str, url: str) -> None:
     """Union links/forms/scripts discovered in a rendered DOM into ``page``."""
     try:
@@ -155,10 +185,15 @@ def crawl(
     if respect_robots:
         from .robots import RobotsPolicy
         policy = RobotsPolicy.fetch(client, start_url, client.user_agent)
-        # Seed same-origin sitemap URLs for better coverage when respecting robots.
+        # Parse same-origin sitemaps (XML, not HTML) for the URLs they list, so
+        # honouring robots.txt actually widens coverage instead of just
+        # consuming a page slot on an unparseable sitemap document.
         for sm in policy.sitemaps[:5]:
-            if same_origin(start_url, sm):
-                queue.append((sm, max_depth))
+            if not same_origin(start_url, sm):
+                continue
+            for page_url in _sitemap_urls(client, sm)[:max_pages]:
+                if same_origin(start_url, page_url):
+                    queue.append((page_url, max_depth))
 
     while queue and len(result.pages) < max_pages:
         url, depth = queue.popleft()
