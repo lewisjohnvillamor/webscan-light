@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Free OWASP Top 10 Scanner with Compliance Mapping | webscan-light</title>
+<meta name="description" content="Scan your website and get findings mapped to OWASP Top 10, PCI-DSS v4, and OWASP ASVS automatically. Free, self-hosted, with an A–F security grade and shareable badge.">
+<link rel="canonical" href="https://lewisjohnvillamor.github.io/webscan-light/owasp-top-10-scanner.html">
+<link rel="stylesheet" href="/assets/site.css">
+<link rel="icon" href="data:,">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Free OWASP Top 10 Scanner with Compliance Mapping | webscan-light">
+<meta property="og:description" content="Scan your website and get findings mapped to OWASP Top 10, PCI-DSS v4, and OWASP ASVS automatically. Free, self-hosted, with an A–F security grade and shareable badge.">
+<meta property="og:url" content="https://lewisjohnvillamor.github.io/webscan-light/owasp-top-10-scanner.html">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Free OWASP Top 10 Scanner with Compliance Mapping | webscan-light">
+<meta name="twitter:description" content="Scan your website and get findings mapped to OWASP Top 10, PCI-DSS v4, and OWASP ASVS automatically. Free, self-hosted, with an A–F security grade and shareable badge.">
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "What does the compliance mapping actually map to?", "acceptedAnswer": {"@type": "Answer", "text": "Every finding carries CWE, and is mapped to OWASP Top 10 (2017, 2021 and 2025 editions), PCI-DSS v4, and OWASP ASVS where applicable \u2014 viewable as a dedicated compliance report per scan."}}, {"@type": "Question", "name": "Is this a compliance certification?", "acceptedAnswer": {"@type": "Answer", "text": "No. It's a mapping that shows which control categories your findings fall under, useful for prioritising remediation and for internal audit prep \u2014 not a substitute for a formal PCI-DSS assessment or ASVS certification."}}, {"@type": "Question", "name": "Does it also give me a letter grade?", "acceptedAnswer": {"@type": "Answer", "text": "Yes \u2014 each website scan gets an A\u2013F security grade with a shareable SVG badge you can embed in a README or status page."}}]}</script>
+</head>
+<body>
+<header class="site">
+  <div class="bar">
+    <span class="code">WEBSCAN</span>
+    <a class="nm" href="/">webscan-light</a>
+    <span class="spacer"></span>
+    <nav><a href="/">Home</a><a href="/exposed-secrets-scanner.html">Secrets</a><a href="/npm-supply-chain-attack-scanner.html">Supply Chain</a><a href="/subdomain-takeover-scanner.html">Takeover</a><a href="/exposed-cloud-storage-scanner.html">Cloud Buckets</a><a href="/free-ssl-tls-scanner.html">SSL/TLS</a><a href="/owasp-top-10-scanner.html" style="color:var(--ink)">OWASP</a></nav>
+  </div>
+</header>
+<main class="wrap">
+<div class="eyebrow">Compliance</div>
+<h1>How do I check my website against the OWASP Top 10?</h1>
+<p class="lede">Run a free scan that maps every finding to OWASP Top 10, PCI-DSS v4, and ASVS automatically.</p>
+<div class="badge-row"><span class="badge">OWASP 2017/2021/2025</span><span class="badge">PCI-DSS v4</span><span class="badge">ASVS</span><span class="badge">A–F grade + badge</span></div>
+<div class="answer"><strong>Short answer:</strong> Run <code>webscan scan yourdomain.com</code>. Every finding — from missing security headers to version-based CVEs — carries a CWE and is mapped to the relevant OWASP Top 10, PCI-DSS v4, and ASVS control, viewable as its own compliance report.</div>
+
+<h2>The command</h2>
+<pre><code>webscan scan yourdomain.com -f html -o report.html
+# then open the Compliance tab, or in the web UI: /report/&lt;id&gt;/compliance</code></pre>
+
+<h2>What gets mapped</h2>
+<ul>
+<li><strong>OWASP Top 10</strong> — 2017, 2021 and 2025 editions</li>
+<li><strong>PCI-DSS v4</strong> — relevant requirement categories</li>
+<li><strong>OWASP ASVS</strong> — relevant verification requirements</li>
+<li><strong>CWE</strong> — on every individual finding</li>
+</ul>
+<p>Findings also roll up into an overall <strong>A–F security grade</strong> with a shareable SVG badge
+(<code>/report/&lt;id&gt;/badge.svg</code>) you can drop into a README or internal dashboard.</p>
+
+<h2>Where this fits in a real workflow</h2>
+<p>Run it once to baseline, then <a href="https://github.com/lewisjohnvillamor/webscan-light">schedule it</a> to re-run daily or weekly — you'll only be
+alerted when a scan surfaces a genuinely <em>new</em> finding compared to the last run, not every time the same
+known issue re-appears.</p>
+<h2>Frequently asked questions</h2>
+<dl class="faq">
+<dt>What does the compliance mapping actually map to?</dt><dd>Every finding carries CWE, and is mapped to OWASP Top 10 (2017, 2021 and 2025 editions), PCI-DSS v4, and OWASP ASVS where applicable — viewable as a dedicated compliance report per scan.</dd>
+<dt>Is this a compliance certification?</dt><dd>No. It's a mapping that shows which control categories your findings fall under, useful for prioritising remediation and for internal audit prep — not a substitute for a formal PCI-DSS assessment or ASVS certification.</dd>
+<dt>Does it also give me a letter grade?</dt><dd>Yes — each website scan gets an A–F security grade with a shareable SVG badge you can embed in a README or status page.</dd>
+</dl><hr>
+<div class="cta"><a class="btn" href="https://github.com/lewisjohnvillamor/webscan-light">Get webscan-light on GitHub →</a><a class="btn secondary" href="/">See all pain points</a></div>
+</main>
+<footer class="site">
+  webscan-light — free &amp; self-hosted, AGPL-3.0 — <a href="https://github.com/lewisjohnvillamor/webscan-light">source on GitHub</a><br>
+  Built for defenders and learners. Only scan systems you own or are authorised to test.
+</footer>
+</body>
+</html>

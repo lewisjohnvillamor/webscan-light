@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Free SSL/TLS Scanner — Self-Hosted Certificate &amp; Cipher Checker | webscan-light</title>
+<meta name="description" content="Check your certificate chain, supported TLS versions, and cipher strength — including internal/staging hosts public scanners can&#x27;t reach. Free, self-hosted, one command.">
+<link rel="canonical" href="https://lewisjohnvillamor.github.io/webscan-light/free-ssl-tls-scanner.html">
+<link rel="stylesheet" href="/assets/site.css">
+<link rel="icon" href="data:,">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Free SSL/TLS Scanner — Self-Hosted Certificate &amp; Cipher Checker | webscan-light">
+<meta property="og:description" content="Check your certificate chain, supported TLS versions, and cipher strength — including internal/staging hosts public scanners can&#x27;t reach. Free, self-hosted, one command.">
+<meta property="og:url" content="https://lewisjohnvillamor.github.io/webscan-light/free-ssl-tls-scanner.html">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Free SSL/TLS Scanner — Self-Hosted Certificate &amp; Cipher Checker | webscan-light">
+<meta name="twitter:description" content="Check your certificate chain, supported TLS versions, and cipher strength — including internal/staging hosts public scanners can&#x27;t reach. Free, self-hosted, one command.">
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "What does it actually check?", "acceptedAnswer": {"@type": "Answer", "text": "Certificate validity and chain, the full matrix of supported protocol versions (TLS 1.0 through 1.3), cipher strength, and common misconfigurations like expired certs or weak ciphers still being offered for compatibility."}}, {"@type": "Question", "name": "Is this as thorough as Qualys SSL Labs?", "acceptedAnswer": {"@type": "Answer", "text": "It's lighter \u2014 SSL Labs does a far deeper protocol-level audit. What webscan-light adds is that it's self-hosted (useful for internal/non-public hosts SSL Labs can't reach) and runs as one check inside a broader scan, not a standalone one-off."}}, {"@type": "Question", "name": "Can I scan an internal or staging host?", "acceptedAnswer": {"@type": "Answer", "text": "Yes \u2014 that's one of the main reasons to self-host: point it at anything your machine can reach, public or not."}}]}</script>
+</head>
+<body>
+<header class="site">
+  <div class="bar">
+    <span class="code">WEBSCAN</span>
+    <a class="nm" href="/">webscan-light</a>
+    <span class="spacer"></span>
+    <nav><a href="/">Home</a><a href="/exposed-secrets-scanner.html">Secrets</a><a href="/npm-supply-chain-attack-scanner.html">Supply Chain</a><a href="/subdomain-takeover-scanner.html">Takeover</a><a href="/exposed-cloud-storage-scanner.html">Cloud Buckets</a><a href="/free-ssl-tls-scanner.html" style="color:var(--ink)">SSL/TLS</a><a href="/owasp-top-10-scanner.html">OWASP</a></nav>
+  </div>
+</header>
+<main class="wrap">
+<div class="eyebrow">SSL/TLS</div>
+<h1>How do I check if my SSL/TLS configuration is actually secure?</h1>
+<p class="lede">Run a free scan of your certificate, protocol versions, and cipher suites — including hosts that aren't publicly reachable.</p>
+<div class="badge-row"><span class="badge">TLS 1.0–1.3 matrix</span><span class="badge">Cipher strength</span><span class="badge">Internal hosts OK</span><span class="badge">Part of full scan</span></div>
+<div class="answer"><strong>Short answer:</strong> Run <code>webscan run ssl yourdomain.com</code>. It inspects the certificate chain and expiry, probes which TLS versions (1.0–1.3) are still accepted, and flags weak cipher suites.</div>
+
+<h2>The command</h2>
+<pre><code>webscan run ssl yourdomain.com -f html -o ssl-report.html</code></pre>
+<p>This check also runs automatically as part of the full <a href="/">website scan</a>
+(<code>webscan scan yourdomain.com</code>), alongside security headers, cookie flags, and version-based CVE
+correlation.</p>
+
+<h2>What "good" looks like</h2>
+<table>
+<tr><th>Check</th><th>Target</th></tr>
+<tr><td>Protocol versions</td><td>TLS 1.2 and 1.3 only — TLS 1.0/1.1 and SSLv3 disabled</td></tr>
+<tr><td>Certificate</td><td>Valid chain, not expired, correct hostname match</td></tr>
+<tr><td>Ciphers</td><td>No RC4, no export-grade, no NULL ciphers</td></tr>
+</table>
+
+<h2>Why self-hosted matters here specifically</h2>
+<p>Public SSL scanners can only reach public hosts. If the certificate you're worried about is on a staging
+server, an internal API gateway, or anything behind a VPN, a self-hosted scanner is the only way to check it
+without exposing it to the internet first.</p>
+<h2>Frequently asked questions</h2>
+<dl class="faq">
+<dt>What does it actually check?</dt><dd>Certificate validity and chain, the full matrix of supported protocol versions (TLS 1.0 through 1.3), cipher strength, and common misconfigurations like expired certs or weak ciphers still being offered for compatibility.</dd>
+<dt>Is this as thorough as Qualys SSL Labs?</dt><dd>It's lighter — SSL Labs does a far deeper protocol-level audit. What webscan-light adds is that it's self-hosted (useful for internal/non-public hosts SSL Labs can't reach) and runs as one check inside a broader scan, not a standalone one-off.</dd>
+<dt>Can I scan an internal or staging host?</dt><dd>Yes — that's one of the main reasons to self-host: point it at anything your machine can reach, public or not.</dd>
+</dl><hr>
+<div class="cta"><a class="btn" href="https://github.com/lewisjohnvillamor/webscan-light">Get webscan-light on GitHub →</a><a class="btn secondary" href="/">See all pain points</a></div>
+</main>
+<footer class="site">
+  webscan-light — free &amp; self-hosted, AGPL-3.0 — <a href="https://github.com/lewisjohnvillamor/webscan-light">source on GitHub</a><br>
+  Built for defenders and learners. Only scan systems you own or are authorised to test.
+</footer>
+</body>
+</html>

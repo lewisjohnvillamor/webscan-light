@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Free Self-Hosted Website &amp; Code Vulnerability Scanner | webscan-light</title>
+<meta name="description" content="webscan-light is a free, open-source, self-hosted scanner for websites and codebases: exposed secrets, npm supply-chain attacks, SSL misconfigurations, subdomain takeover, open S3 buckets and more. No account, no data leaves your machine.">
+<link rel="canonical" href="https://lewisjohnvillamor.github.io/webscan-light/">
+<link rel="stylesheet" href="/assets/site.css">
+<link rel="icon" href="data:,">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Free Self-Hosted Website &amp; Code Vulnerability Scanner | webscan-light">
+<meta property="og:description" content="webscan-light is a free, open-source, self-hosted scanner for websites and codebases: exposed secrets, npm supply-chain attacks, SSL misconfigurations, subdomain takeover, open S3 buckets and more. No account, no data leaves your machine.">
+<meta property="og:url" content="https://lewisjohnvillamor.github.io/webscan-light/">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Free Self-Hosted Website &amp; Code Vulnerability Scanner | webscan-light">
+<meta name="twitter:description" content="webscan-light is a free, open-source, self-hosted scanner for websites and codebases: exposed secrets, npm supply-chain attacks, SSL misconfigurations, subdomain takeover, open S3 buckets and more. No account, no data leaves your machine.">
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "Is webscan-light really free?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. It's AGPL-3.0 licensed, source-available, and free for commercial and personal use. There's no account, no scan quota, and no data leaves your machine \u2014 it runs on your own server or laptop."}}, {"@type": "Question", "name": "Do I need to install anything to try it?", "acceptedAnswer": {"@type": "Answer", "text": "Yes, it's self-hosted: <code>pip install webscan-light[web]</code> or <code>docker run ghcr.io/lewisjohnvillamor/webscan-light</code>, then open the local web UI or use the CLI. There's no hosted SaaS version."}}, {"@type": "Question", "name": "Is this a replacement for a full penetration test?", "acceptedAnswer": {"@type": "Answer", "text": "No. It's a light scanner \u2014 version/heuristic checks, misconfiguration detection, and safe-PoC active testing. It won't replace a manual pentest, but it catches the common, easy-to-miss issues fast and for free, continuously."}}]}</script>
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "SoftwareApplication", "name": "webscan-light", "applicationCategory": "SecurityApplication", "operatingSystem": "Linux, macOS, Windows (Docker)", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "license": "https://www.gnu.org/licenses/agpl-3.0.html", "url": "https://lewisjohnvillamor.github.io/webscan-light/", "codeRepository": "https://github.com/lewisjohnvillamor/webscan-light", "description": "A free, self-hosted website and code vulnerability scanner covering secrets detection, npm supply-chain attacks, SSL/TLS misconfiguration, subdomain takeover, exposed cloud storage and OWASP Top 10 compliance mapping."}</script>
+</head>
+<body>
+<header class="site">
+  <div class="bar">
+    <span class="code">WEBSCAN</span>
+    <a class="nm" href="/">webscan-light</a>
+    <span class="spacer"></span>
+    <nav><a href="/">Home</a><a href="/exposed-secrets-scanner.html">Secrets</a><a href="/npm-supply-chain-attack-scanner.html">Supply Chain</a><a href="/subdomain-takeover-scanner.html">Takeover</a><a href="/exposed-cloud-storage-scanner.html">Cloud Buckets</a><a href="/free-ssl-tls-scanner.html">SSL/TLS</a><a href="/owasp-top-10-scanner.html">OWASP</a></nav>
+  </div>
+</header>
+<main class="wrap">
+<div class="eyebrow">Free &amp; self-hosted</div>
+<h1>A free scanner for the security questions that actually keep you up at night</h1>
+<p class="lede">webscan-light is a self-hosted suite of 28 security tools — point it at a website or a codebase and get a straight answer, not a sales call.</p>
+<div class="badge-row"><span class="badge">AGPL-3.0</span><span class="badge">No account</span><span class="badge">CLI + Web UI</span><span class="badge">Docker</span></div>
+<div class="answer"><strong>Short answer:</strong> Pick the problem below that matches what you're worried about. Each page gives you the direct answer and the exact command to check it yourself, for free, in the next five minutes.</div>
+
+<div class="grid">
+  <a class="card" href="/exposed-secrets-scanner.html"><div class="t">Exposed API keys & secrets</div>
+    <div class="d">Did someone commit an AWS key, a Stripe key, or a DB password to this repo?</div></a>
+  <a class="card" href="/npm-supply-chain-attack-scanner.html"><div class="t">npm supply-chain attacks</div>
+    <div class="d">Is one of my dependencies typosquatted, poisoned, or running install scripts?</div></a>
+  <a class="card" href="/subdomain-takeover-scanner.html"><div class="t">Subdomain takeover</div>
+    <div class="d">Does a dangling DNS record let someone claim one of my subdomains?</div></a>
+  <a class="card" href="/exposed-cloud-storage-scanner.html"><div class="t">Exposed cloud storage</div>
+    <div class="d">Is there a public S3, GCS or Azure bucket sitting under my domain name?</div></a>
+  <a class="card" href="/free-ssl-tls-scanner.html"><div class="t">SSL/TLS misconfiguration</div>
+    <div class="d">Is my certificate, protocol version, or cipher suite actually safe?</div></a>
+  <a class="card" href="/owasp-top-10-scanner.html"><div class="t">OWASP Top 10 compliance</div>
+    <div class="d">Which OWASP / PCI-DSS / ASVS controls does my site actually fail?</div></a>
+</div>
+
+<h2>Why not just use a SaaS scanner?</h2>
+<p>Hosted scanners are fine until you hit the free-tier scan limit, need to point it at an internal/staging host,
+or don't love sending your source code and target list to a third party. webscan-light runs entirely on your own
+infrastructure — a laptop, a CI runner, or a small VPS — under a free, auditable, open-source licence.</p>
+
+<h2>What's actually inside it</h2>
+<table>
+<tr><th>Area</th><th>Tools</th></tr>
+<tr><td>Website recon &amp; vulnerability</td><td>40-test light scan, SSL/TLS, headers, CVE/EPSS/KEV correlation, subdomains, virtual hosts, API discovery</td></tr>
+<tr><td>Code &amp; supply chain</td><td>Secrets scanner, dependency/OSV scanner, npm supply-chain &amp; typosquat heuristics, SAST patterns, IaC checks</td></tr>
+<tr><td>Active testing (authorised only)</td><td>XSS, SQLi, SSTI, command injection, LFI, stored XSS — detect + safe PoC</td></tr>
+<tr><td>Monitoring</td><td>Attack Surface Monitor, scheduled scans, new-finding alerts (webhook/email)</td></tr>
+</table>
+<p>Full tool list, install instructions and documentation live in the <a href="https://github.com/lewisjohnvillamor/webscan-light">GitHub README</a>.</p>
+<h2>Frequently asked questions</h2>
+<dl class="faq">
+<dt>Is webscan-light really free?</dt><dd>Yes. It's AGPL-3.0 licensed, source-available, and free for commercial and personal use. There's no account, no scan quota, and no data leaves your machine — it runs on your own server or laptop.</dd>
+<dt>Do I need to install anything to try it?</dt><dd>Yes, it's self-hosted: <code>pip install webscan-light[web]</code> or <code>docker run ghcr.io/lewisjohnvillamor/webscan-light</code>, then open the local web UI or use the CLI. There's no hosted SaaS version.</dd>
+<dt>Is this a replacement for a full penetration test?</dt><dd>No. It's a light scanner — version/heuristic checks, misconfiguration detection, and safe-PoC active testing. It won't replace a manual pentest, but it catches the common, easy-to-miss issues fast and for free, continuously.</dd>
+</dl><hr>
+<div class="cta"><a class="btn" href="https://github.com/lewisjohnvillamor/webscan-light">Get webscan-light on GitHub →</a><a class="btn secondary" href="/">See all pain points</a></div>
+</main>
+<footer class="site">
+  webscan-light — free &amp; self-hosted, AGPL-3.0 — <a href="https://github.com/lewisjohnvillamor/webscan-light">source on GitHub</a><br>
+  Built for defenders and learners. Only scan systems you own or are authorised to test.
+</footer>
+</body>
+</html>

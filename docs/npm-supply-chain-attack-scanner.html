@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Free npm Supply-Chain Attack &amp; Typosquat Scanner | webscan-light</title>
+<meta name="description" content="Detect npm package poisoning before it runs: typosquatted dependency names, install-script abuse, non-registry package sources, and missing integrity hashes. Free, self-hosted, one command.">
+<link rel="canonical" href="https://lewisjohnvillamor.github.io/webscan-light/npm-supply-chain-attack-scanner.html">
+<link rel="stylesheet" href="/assets/site.css">
+<link rel="icon" href="data:,">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Free npm Supply-Chain Attack &amp; Typosquat Scanner | webscan-light">
+<meta property="og:description" content="Detect npm package poisoning before it runs: typosquatted dependency names, install-script abuse, non-registry package sources, and missing integrity hashes. Free, self-hosted, one command.">
+<meta property="og:url" content="https://lewisjohnvillamor.github.io/webscan-light/npm-supply-chain-attack-scanner.html">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Free npm Supply-Chain Attack &amp; Typosquat Scanner | webscan-light">
+<meta name="twitter:description" content="Detect npm package poisoning before it runs: typosquatted dependency names, install-script abuse, non-registry package sources, and missing integrity hashes. Free, self-hosted, one command.">
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "What is npm typosquatting?", "acceptedAnswer": {"@type": "Answer", "text": "An attacker publishes a malicious package with a name one character off from a popular one (e.g. <code>expres</code> instead of <code>express</code>), hoping a typo in your <code>npm install</code> pulls in their package instead."}}, {"@type": "Question", "name": "What are install scripts and why are they dangerous?", "acceptedAnswer": {"@type": "Answer", "text": "<code>preinstall</code>/<code>install</code>/<code>postinstall</code> scripts in package.json run automatically \u2014 with no confirmation \u2014 the moment <code>npm install</code> finishes resolving them. They're the single most common delivery mechanism for npm supply-chain attacks, because they execute arbitrary code on your machine or CI runner."}}, {"@type": "Question", "name": "Does this replace <code>npm audit</code>?", "acceptedAnswer": {"@type": "Answer", "text": "No \u2014 they're complementary. <code>npm audit</code> (and this tool's own OSV-based dependency scan) checks for known-vulnerable published versions. The supply-chain heuristics in webscan-light additionally catch typosquats, install-script abuse, and non-registry sources that a known-CVE database won't flag because nothing's been disclosed about them yet."}}]}</script>
+</head>
+<body>
+<header class="site">
+  <div class="bar">
+    <span class="code">WEBSCAN</span>
+    <a class="nm" href="/">webscan-light</a>
+    <span class="spacer"></span>
+    <nav><a href="/">Home</a><a href="/exposed-secrets-scanner.html">Secrets</a><a href="/npm-supply-chain-attack-scanner.html" style="color:var(--ink)">Supply Chain</a><a href="/subdomain-takeover-scanner.html">Takeover</a><a href="/exposed-cloud-storage-scanner.html">Cloud Buckets</a><a href="/free-ssl-tls-scanner.html">SSL/TLS</a><a href="/owasp-top-10-scanner.html">OWASP</a></nav>
+  </div>
+</header>
+<main class="wrap">
+<div class="eyebrow">Supply chain</div>
+<h1>How do I detect npm supply-chain attacks and package poisoning?</h1>
+<p class="lede">Run a free scan of your package.json and lockfile for the three patterns every real npm poisoning incident shares.</p>
+<div class="badge-row"><span class="badge">package.json + lockfile</span><span class="badge">Typosquat detection</span><span class="badge">Install-script audit</span><span class="badge">CLI + Web upload</span></div>
+<div class="answer"><strong>Short answer:</strong> Run <code>webscan run code ./my-project</code>. It flags dependency names one edit away from a popular package (typosquatting), any package — yours or a dependency's — that runs an install script, and any lockfile entry resolved from a non-registry source or missing an integrity hash.</div>
+
+<h2>The command</h2>
+<pre><code>webscan run code ./my-project -f html -o supply-chain-report.html</code></pre>
+<p>This is one part of the broader <code>code</code> scan (which also covers SAST patterns, IaC misconfiguration
+and secrets) — see the <a href="/exposed-secrets-scanner.html">secrets scanner</a> page for the rest of it.</p>
+
+<h2>The three signals that actually matter</h2>
+<table>
+<tr><th>Signal</th><th>Why it matters</th></tr>
+<tr><td>Typosquatted name</td><td>A one-character-off match against a popular package (e.g. react, lodash,
+express, axios) is the classic bait — this is checked by edit distance, not an exact blocklist.</td></tr>
+<tr><td>Install lifecycle scripts</td><td>Any dependency with <code>hasInstallScript</code> in the lockfile runs
+code on install — the real-world delivery mechanism behind incidents like event-stream and the 2024/2025 wave of
+compromised maintainer accounts.</td></tr>
+<tr><td>Non-registry resolution</td><td>A lockfile entry resolved from a git/HTTP URL instead of
+registry.npmjs.org bypasses registry integrity checks entirely.</td></tr>
+</table>
+
+<h2>What to do when it finds something</h2>
+<ol>
+<li>Verify the package name character-by-character against the one you meant to install.</li>
+<li>Audit any flagged install script before running <code>npm install</code> again.</li>
+<li>In CI, install with <code>--ignore-scripts</code> and an explicit allow-list for packages that legitimately
+need them (native addons, etc.).</li>
+</ol>
+<h2>Frequently asked questions</h2>
+<dl class="faq">
+<dt>What is npm typosquatting?</dt><dd>An attacker publishes a malicious package with a name one character off from a popular one (e.g. <code>expres</code> instead of <code>express</code>), hoping a typo in your <code>npm install</code> pulls in their package instead.</dd>
+<dt>What are install scripts and why are they dangerous?</dt><dd><code>preinstall</code>/<code>install</code>/<code>postinstall</code> scripts in package.json run automatically — with no confirmation — the moment <code>npm install</code> finishes resolving them. They're the single most common delivery mechanism for npm supply-chain attacks, because they execute arbitrary code on your machine or CI runner.</dd>
+<dt>Does this replace &lt;code&gt;npm audit&lt;/code&gt;?</dt><dd>No — they're complementary. <code>npm audit</code> (and this tool's own OSV-based dependency scan) checks for known-vulnerable published versions. The supply-chain heuristics in webscan-light additionally catch typosquats, install-script abuse, and non-registry sources that a known-CVE database won't flag because nothing's been disclosed about them yet.</dd>
+</dl><hr>
+<div class="cta"><a class="btn" href="https://github.com/lewisjohnvillamor/webscan-light">Get webscan-light on GitHub →</a><a class="btn secondary" href="/">See all pain points</a></div>
+</main>
+<footer class="site">
+  webscan-light — free &amp; self-hosted, AGPL-3.0 — <a href="https://github.com/lewisjohnvillamor/webscan-light">source on GitHub</a><br>
+  Built for defenders and learners. Only scan systems you own or are authorised to test.
+</footer>
+</body>
+</html>

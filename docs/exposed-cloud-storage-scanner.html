@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Free Exposed S3 / GCS / Azure Bucket Scanner | webscan-light</title>
+<meta name="description" content="Find publicly readable S3 buckets, Google Cloud Storage buckets, and Azure Blob containers guessed from your domain name. Free, self-hosted, no cloud credentials needed.">
+<link rel="canonical" href="https://lewisjohnvillamor.github.io/webscan-light/exposed-cloud-storage-scanner.html">
+<link rel="stylesheet" href="/assets/site.css">
+<link rel="icon" href="data:,">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Free Exposed S3 / GCS / Azure Bucket Scanner | webscan-light">
+<meta property="og:description" content="Find publicly readable S3 buckets, Google Cloud Storage buckets, and Azure Blob containers guessed from your domain name. Free, self-hosted, no cloud credentials needed.">
+<meta property="og:url" content="https://lewisjohnvillamor.github.io/webscan-light/exposed-cloud-storage-scanner.html">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Free Exposed S3 / GCS / Azure Bucket Scanner | webscan-light">
+<meta name="twitter:description" content="Find publicly readable S3 buckets, Google Cloud Storage buckets, and Azure Blob containers guessed from your domain name. Free, self-hosted, no cloud credentials needed.">
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "How does it find my buckets without an API key?", "acceptedAnswer": {"@type": "Answer", "text": "It generates likely bucket names from your domain (and common suffixes/prefixes) and checks whether each one resolves to a public S3, GCS or Azure Blob endpoint with world-readable listing \u2014 no cloud credentials required, because it's testing from the outside, same as an attacker would."}}, {"@type": "Question", "name": "Will it find every bucket?", "acceptedAnswer": {"@type": "Answer", "text": "No \u2014 it's a heuristic, name-based guesser, not an account enumeration tool. It catches the common naming conventions (company name, company-assets, company-backups, etc.) but can't find a bucket with a truly random name."}}, {"@type": "Question", "name": "What should I do if it finds an open bucket?", "acceptedAnswer": {"@type": "Answer", "text": "Immediately restrict the bucket policy / ACL to private, audit what was in it, and rotate any credentials or sensitive data that may have been exposed."}}]}</script>
+</head>
+<body>
+<header class="site">
+  <div class="bar">
+    <span class="code">WEBSCAN</span>
+    <a class="nm" href="/">webscan-light</a>
+    <span class="spacer"></span>
+    <nav><a href="/">Home</a><a href="/exposed-secrets-scanner.html">Secrets</a><a href="/npm-supply-chain-attack-scanner.html">Supply Chain</a><a href="/subdomain-takeover-scanner.html">Takeover</a><a href="/exposed-cloud-storage-scanner.html" style="color:var(--ink)">Cloud Buckets</a><a href="/free-ssl-tls-scanner.html">SSL/TLS</a><a href="/owasp-top-10-scanner.html">OWASP</a></nav>
+  </div>
+</header>
+<main class="wrap">
+<div class="eyebrow">Cloud exposure</div>
+<h1>How do I check if I have an exposed S3, GCS, or Azure storage bucket?</h1>
+<p class="lede">Run a free scan that guesses bucket names from your domain and checks each one for public read access.</p>
+<div class="badge-row"><span class="badge">AWS S3</span><span class="badge">Google Cloud Storage</span><span class="badge">Azure Blob</span><span class="badge">No credentials needed</span></div>
+<div class="answer"><strong>Short answer:</strong> Run <code>webscan run cloud yourcompany.com</code>. It guesses likely bucket names (yourcompany, yourcompany-assets, yourcompany-backup, etc.) across AWS S3, Google Cloud Storage and Azure Blob, and flags any that are publicly listable.</div>
+
+<h2>The command</h2>
+<pre><code>webscan run cloud yourcompany.com -f html -o buckets-report.html</code></pre>
+
+<h2>Why open buckets keep happening</h2>
+<p>Default-private bucket policies get loosened for a one-off integration, a static-site deploy, or a "just for
+testing" share — and never get locked back down. Because bucket names are global and guessable, a public bucket
+under your company's name is one of the easiest things for an outsider to stumble onto.</p>
+
+<h2>What good looks like</h2>
+<ul>
+<li>Bucket policy / ACL denies public <code>s3:ListBucket</code> and public object read by default.</li>
+<li>Static site or CDN buckets are served only through CloudFront/Cloud CDN with Origin Access Control, never
+directly.</li>
+<li>Backups and logs live in a separate, non-guessable-named bucket with versioning and access logging on.</li>
+</ul>
+<h2>Frequently asked questions</h2>
+<dl class="faq">
+<dt>How does it find my buckets without an API key?</dt><dd>It generates likely bucket names from your domain (and common suffixes/prefixes) and checks whether each one resolves to a public S3, GCS or Azure Blob endpoint with world-readable listing — no cloud credentials required, because it's testing from the outside, same as an attacker would.</dd>
+<dt>Will it find every bucket?</dt><dd>No — it's a heuristic, name-based guesser, not an account enumeration tool. It catches the common naming conventions (company name, company-assets, company-backups, etc.) but can't find a bucket with a truly random name.</dd>
+<dt>What should I do if it finds an open bucket?</dt><dd>Immediately restrict the bucket policy / ACL to private, audit what was in it, and rotate any credentials or sensitive data that may have been exposed.</dd>
+</dl><hr>
+<div class="cta"><a class="btn" href="https://github.com/lewisjohnvillamor/webscan-light">Get webscan-light on GitHub →</a><a class="btn secondary" href="/">See all pain points</a></div>
+</main>
+<footer class="site">
+  webscan-light — free &amp; self-hosted, AGPL-3.0 — <a href="https://github.com/lewisjohnvillamor/webscan-light">source on GitHub</a><br>
+  Built for defenders and learners. Only scan systems you own or are authorised to test.
+</footer>
+</body>
+</html>

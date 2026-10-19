@@ -7,6 +7,10 @@ machine.
 
 Use it from the **CLI** or the **web UI**. Reports export to **HTML, PDF, JSON, SARIF and CSV**.
 
+📄 **[Docs & guides →](https://lewisjohnvillamor.github.io/webscan-light/)** — direct answers for
+specific problems (exposed secrets, npm supply-chain attacks, SSL misconfiguration, subdomain takeover,
+open cloud buckets, OWASP Top 10 compliance), each with the exact command to check it yourself.
+
 ```
 Overall risk level   High
   Critical           0

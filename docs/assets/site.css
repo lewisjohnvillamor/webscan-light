@@ -1,0 +1,75 @@
+/* webscan-light — public marketing site stylesheet.
+   Shares the design language of the app (warm bone canvas, mono accents,
+   restrained palette) but is fully static — no server, no build step. */
+:root{
+  --bg:#f7f6f3;--card:#fff;--panel:#faf9f7;--ink:#23262b;--muted:#5b5e63;--faint:#84878c;
+  --line:#e8e6e1;--line-soft:#efede8;--accent:#1f6c9f;--cta:#161616;--cta-ink:#fff;
+  --good:#346538;--good-bg:#edf3ec;--warn:#9f2f2d;--warn-bg:#fdebec;
+  --mono:ui-monospace,"SF Mono","Geist Mono","JetBrains Mono",Menlo,monospace;
+  --sans:"SF Pro Display","Geist Sans","Helvetica Neue",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --radius:12px;--shadow:0 1px 2px rgba(0,0,0,.03);
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#0e0f0d;--card:#171815;--panel:#131412;--ink:#e7e6e1;--muted:#a09e97;--faint:#787770;
+  --line:#262723;--line-soft:#201f1c;--accent:#7bb7dd;--cta:#e7e6e1;--cta-ink:#161616;
+  --good:#7fbd82;--good-bg:#152018;--warn:#e59a97;--warn-bg:#271817;
+  --shadow:0 1px 2px rgba(0,0,0,.4);
+}}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 var(--sans);-webkit-font-smoothing:antialiased}
+a{color:var(--accent)}
+.wrap{max-width:760px;margin:0 auto;padding:0 20px}
+header.site{border-bottom:1px solid var(--line);padding:18px 0;margin-bottom:8px}
+header.site .bar{max-width:760px;margin:0 auto;padding:0 20px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+header.site .code{flex-shrink:0}
+header.site .code{font:600 11px/1 var(--mono);letter-spacing:.14em;color:var(--muted);border:1px solid var(--line);
+  border-radius:6px;padding:6px 9px;text-transform:uppercase}
+header.site .nm{font-weight:600;font-size:15px;letter-spacing:-.02em;color:var(--ink);text-decoration:none;
+  white-space:nowrap}
+header.site .spacer{flex:1}
+header.site nav a{color:var(--muted);font:600 11px/1 var(--mono);letter-spacing:.07em;text-transform:uppercase;
+  margin-left:16px;text-decoration:none}
+header.site nav a:hover{color:var(--ink)}
+.eyebrow{font:700 11px/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--accent);margin:0 0 10px}
+h1{font-size:clamp(28px,5vw,40px);line-height:1.15;letter-spacing:-.02em;margin:0 0 16px}
+h2{font-size:22px;letter-spacing:-.01em;margin:40px 0 14px}
+h3{font-size:16px;margin:22px 0 8px}
+.lede{font-size:19px;line-height:1.6;color:var(--muted);margin:0 0 28px}
+.answer{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--accent);
+  border-radius:0 10px 10px 0;padding:18px 20px;margin:0 0 30px;font-size:16.5px}
+.answer strong{color:var(--ink)}
+p{margin:0 0 16px}
+ul,ol{margin:0 0 16px;padding-left:22px}
+li{margin-bottom:8px}
+code{background:var(--panel);border:1px solid var(--line-soft);border-radius:5px;padding:2px 6px;
+  font:.88em var(--mono);color:var(--ink)}
+pre{background:#161616;color:#e7e6e1;border-radius:10px;padding:16px 18px;overflow-x:auto;
+  font:13px/1.6 var(--mono);margin:0 0 20px}
+pre code{background:none;border:0;padding:0;color:inherit;font-size:inherit}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);
+  padding:22px 24px;margin:0 0 20px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px;margin:0 0 30px}
+.grid a.card{text-decoration:none;color:inherit;transition:box-shadow .15s ease}
+.grid a.card:hover{box-shadow:0 2px 10px rgba(0,0,0,.06)}
+.grid .card .t{font-weight:600;font-size:15px;margin-bottom:6px;color:var(--ink)}
+.grid .card .d{font-size:13.5px;color:var(--muted);line-height:1.5}
+.cta{display:flex;gap:12px;flex-wrap:wrap;margin:26px 0 36px}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:12px 22px;font:600 14px var(--sans);
+  border:1px solid var(--cta);border-radius:9px;background:var(--cta);color:var(--cta-ink)!important;
+  text-decoration:none}
+.btn.secondary{background:transparent;color:var(--ink)!important;border-color:var(--line)}
+.faq dt{font-weight:600;margin:0 0 6px;font-size:16px}
+.faq dd{margin:0 0 22px;color:var(--muted)}
+.badge-row{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 22px}
+.badge{font:600 11px/1 var(--mono);letter-spacing:.05em;text-transform:uppercase;color:var(--muted);
+  border:1px solid var(--line);border-radius:999px;padding:6px 12px}
+hr{border:0;border-top:1px solid var(--line);margin:40px 0}
+footer.site{color:var(--faint);font:12.5px var(--mono);text-align:center;padding:40px 0 60px}
+footer.site a{color:var(--faint)}
+.note{background:var(--panel);border:1px solid var(--line-soft);border-radius:10px;padding:13px 16px;
+  font-size:13.5px;color:var(--muted);margin:0 0 20px}
+.note.warn{background:var(--warn-bg);border-color:color-mix(in srgb,var(--warn) 30%,transparent);color:var(--ink)}
+table{width:100%;border-collapse:collapse;margin:0 0 20px;font-size:14px}
+th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line-soft)}
+th{color:var(--faint);font:600 10.5px/1 var(--mono);text-transform:uppercase;letter-spacing:.05em}

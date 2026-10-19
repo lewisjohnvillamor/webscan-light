@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Free Subdomain Takeover Scanner | webscan-light</title>
+<meta name="description" content="Check your subdomains for dangling CNAME records that point at unclaimed cloud resources — GitHub Pages, S3, Heroku, Azure and more. Free, self-hosted, one command.">
+<link rel="canonical" href="https://lewisjohnvillamor.github.io/webscan-light/subdomain-takeover-scanner.html">
+<link rel="stylesheet" href="/assets/site.css">
+<link rel="icon" href="data:,">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Free Subdomain Takeover Scanner | webscan-light">
+<meta property="og:description" content="Check your subdomains for dangling CNAME records that point at unclaimed cloud resources — GitHub Pages, S3, Heroku, Azure and more. Free, self-hosted, one command.">
+<meta property="og:url" content="https://lewisjohnvillamor.github.io/webscan-light/subdomain-takeover-scanner.html">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Free Subdomain Takeover Scanner | webscan-light">
+<meta name="twitter:description" content="Check your subdomains for dangling CNAME records that point at unclaimed cloud resources — GitHub Pages, S3, Heroku, Azure and more. Free, self-hosted, one command.">
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "What is a subdomain takeover?", "acceptedAnswer": {"@type": "Answer", "text": "When a DNS record (usually a CNAME) still points at a cloud resource you've deleted \u2014 a GitHub Pages site, an S3 bucket, a Heroku app \u2014 anyone can claim that resource and serve their own content from your subdomain."}}, {"@type": "Question", "name": "Why is this dangerous?", "acceptedAnswer": {"@type": "Answer", "text": "The attacker's page runs under your domain: it inherits your cookies' scope, can phish with a trusted-looking URL, and can bypass CSP/CORS rules that trust your domain."}}, {"@type": "Question", "name": "Which services are checked?", "acceptedAnswer": {"@type": "Answer", "text": "The scanner matches CNAME targets and response fingerprints against the known-vulnerable patterns for major providers \u2014 GitHub Pages, Heroku, AWS S3/CloudFront, Azure, Fastly, Shopify and more."}}]}</script>
+</head>
+<body>
+<header class="site">
+  <div class="bar">
+    <span class="code">WEBSCAN</span>
+    <a class="nm" href="/">webscan-light</a>
+    <span class="spacer"></span>
+    <nav><a href="/">Home</a><a href="/exposed-secrets-scanner.html">Secrets</a><a href="/npm-supply-chain-attack-scanner.html">Supply Chain</a><a href="/subdomain-takeover-scanner.html" style="color:var(--ink)">Takeover</a><a href="/exposed-cloud-storage-scanner.html">Cloud Buckets</a><a href="/free-ssl-tls-scanner.html">SSL/TLS</a><a href="/owasp-top-10-scanner.html">OWASP</a></nav>
+  </div>
+</header>
+<main class="wrap">
+<div class="eyebrow">Vulnerability</div>
+<h1>How do I check for subdomain takeover vulnerabilities?</h1>
+<p class="lede">Run a free scan of your subdomains' DNS records against known-vulnerable cloud-provider fingerprints.</p>
+<div class="badge-row"><span class="badge">DNS + fingerprint match</span><span class="badge">Major cloud providers</span><span class="badge">Passive, non-destructive</span></div>
+<div class="answer"><strong>Short answer:</strong> Run <code>webscan run takeover yourdomain.com</code>. It resolves each subdomain's CNAME, checks whether it points at an unclaimed cloud resource (GitHub Pages, S3, Heroku, Azure, and more), and flags anything exploitable.</div>
+
+<h2>The command</h2>
+<pre><code>webscan run takeover yourdomain.com -f html -o takeover-report.html</code></pre>
+<p>Pair it with the <a href="/">Subdomain Finder</a> tool if you don't already have a full list of your
+subdomains — it discovers them via certificate-transparency logs and DNS brute force first.</p>
+
+<h2>A minimal, real example</h2>
+<p><code>blog.example.com</code> once pointed at <code>example.github.io</code> via CNAME, hosting a GitHub Pages
+site. The GitHub Pages project was deleted, but the DNS CNAME was never removed. Today, anyone can create a
+repository named <code>example.github.io</code> on their own GitHub account and GitHub will happily serve it at
+<code>blog.example.com</code> — fully impersonating that subdomain.</p>
+
+<h2>How to fix a confirmed takeover</h2>
+<ol>
+<li>Remove the dangling DNS record if the resource is genuinely no longer needed, or</li>
+<li>Re-claim the resource (recreate the GitHub Pages repo, re-provision the S3 bucket, etc.) under your own
+account before anyone else does.</li>
+</ol>
+<h2>Frequently asked questions</h2>
+<dl class="faq">
+<dt>What is a subdomain takeover?</dt><dd>When a DNS record (usually a CNAME) still points at a cloud resource you've deleted — a GitHub Pages site, an S3 bucket, a Heroku app — anyone can claim that resource and serve their own content from your subdomain.</dd>
+<dt>Why is this dangerous?</dt><dd>The attacker's page runs under your domain: it inherits your cookies' scope, can phish with a trusted-looking URL, and can bypass CSP/CORS rules that trust your domain.</dd>
+<dt>Which services are checked?</dt><dd>The scanner matches CNAME targets and response fingerprints against the known-vulnerable patterns for major providers — GitHub Pages, Heroku, AWS S3/CloudFront, Azure, Fastly, Shopify and more.</dd>
+</dl><hr>
+<div class="cta"><a class="btn" href="https://github.com/lewisjohnvillamor/webscan-light">Get webscan-light on GitHub →</a><a class="btn secondary" href="/">See all pain points</a></div>
+</main>
+<footer class="site">
+  webscan-light — free &amp; self-hosted, AGPL-3.0 — <a href="https://github.com/lewisjohnvillamor/webscan-light">source on GitHub</a><br>
+  Built for defenders and learners. Only scan systems you own or are authorised to test.
+</footer>
+</body>
+</html>

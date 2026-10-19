@@ -1,0 +1,8 @@
+# This is the public marketing/docs site (GitHub Pages), meant to be indexed.
+# It is separate from a running webscan-light instance's own /robots.txt,
+# which disallows indexing because that is a live scanning tool, not a
+# public content site.
+User-agent: *
+Allow: /
+
+Sitemap: https://lewisjohnvillamor.github.io/webscan-light/sitemap.xml
