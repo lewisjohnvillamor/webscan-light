@@ -5,6 +5,7 @@ ToolReport. Tools register metadata so the CLI and web UI can list them.
 """
 from __future__ import annotations
 
+import functools
 from collections.abc import Callable
 from dataclasses import dataclass, field
 
@@ -48,13 +49,33 @@ class ToolSpec:
 _REGISTRY: dict[str, ToolSpec] = {}
 
 
+BLOCKED_MESSAGE = ("Active testing is disabled. Re-run with --authorized (CLI) or tick the "
+                   "authorization box (UI) to confirm you are permitted to test this target.")
+
+
+def _require_authorization(spec: ToolSpec, func: ToolFunc) -> ToolFunc:
+    @functools.wraps(func)
+    def guarded(target: str, options: ToolOptions) -> ToolReport:
+        if not options.authorized:
+            report = ToolReport(tool=spec.id, tool_name=spec.name, target=target)
+            report.errors.append(BLOCKED_MESSAGE)
+            return report.finish("Blocked")
+        return func(target, options)
+
+    return guarded
+
+
 def tool(**meta) -> Callable[[ToolFunc], ToolFunc]:
+    # Active tools are wrapped so consent is enforced at every entry point
+    # (CLI, web, scheduler, other tools calling run() directly), not just the UI.
     def decorator(func: ToolFunc) -> ToolFunc:
         spec = ToolSpec(func=func, **meta)
         if spec.id in _REGISTRY:
             raise ValueError(f"duplicate tool id: {spec.id}")
+        if spec.active:
+            spec.func = _require_authorization(spec, func)
         _REGISTRY[spec.id] = spec
-        return func
+        return spec.func
 
     return decorator
 

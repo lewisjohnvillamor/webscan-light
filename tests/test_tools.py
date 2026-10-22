@@ -3,6 +3,8 @@ from __future__ import annotations
 
 import json
 
+import pytest
+
 from webscan.core.models import Finding, Severity
 from webscan.core.toolreport import Section, ToolReport
 from webscan.report import generic
@@ -28,10 +30,23 @@ def test_parse_ports_forms():
 
 def test_active_tools_refuse_without_authorization():
     load_tools()
-    for tool_id in ("xss", "sqli"):
-        report = get_tool(tool_id).func("http://127.0.0.1:9/", ToolOptions(authorized=False))
-        assert report.status == "Blocked"
-        assert any("authoriz" in e.lower() for e in report.errors)
+    active = [spec for spec in all_tools() if spec.active]
+    assert {"ports", "network", "vhosts", "cloud", "api", "webmisc", "urlfuzzer", "sniper"} <= {
+        spec.id for spec in active}
+    for spec in active:
+        report = spec.func("http://127.0.0.1:9/", ToolOptions(authorized=False))
+        assert report.status == "Blocked", spec.id
+        assert any("authoriz" in e.lower() for e in report.errors), spec.id
+
+
+def test_asm_skips_port_scan_without_authorization(monkeypatch):
+    load_tools()
+    from webscan.tools import ports
+    monkeypatch.setattr(ports, "run", lambda *a, **k: pytest.fail("ports ran unauthorized"))
+    report = get_tool("asm").func("example.invalid", ToolOptions(offline=True, timeout=1))
+    modules = next(s for s in report.sections if s.title == "Modules")
+    assert ["Ports", "Skipped", "port scanning requires --authorized"] in modules.table.rows
+    assert not any(f.test_id.startswith("port_") for f in report.findings)
 
 
 def test_dorks_generates_queries():
@@ -45,7 +60,7 @@ def test_dorks_generates_queries():
 
 def test_url_fuzzer_finds_paths(server):
     load_tools()
-    report = get_tool("urlfuzzer").func(server, ToolOptions(timeout=5, max_items=60, workers=20))
+    report = get_tool("urlfuzzer").func(server, ToolOptions(timeout=5, max_items=60, workers=20, authorized=True))
     assert report.status == "Finished"
     paths = {row[0] for row in report.sections[0].table.rows}
     assert "robots.txt" in paths
@@ -55,7 +70,7 @@ def test_ports_scans_fixture(server):
     load_tools()
     from urllib.parse import urlparse
     port = urlparse(server).port
-    report = get_tool("ports").func("127.0.0.1", ToolOptions(ports=str(port), timeout=3))
+    report = get_tool("ports").func("127.0.0.1", ToolOptions(ports=str(port), timeout=3, authorized=True))
     assert report.status == "Finished"
     assert any(row[0] == str(port) for row in report.sections[0].table.rows)
 

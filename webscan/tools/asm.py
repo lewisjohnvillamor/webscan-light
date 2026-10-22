@@ -66,7 +66,9 @@ def run(target: str, options: ToolOptions) -> ToolReport:
 
     # 3) Ports for the apex host (and a few subdomains, bounded).
     port_rows: list[list[str]] = []
-    scan_hosts = hostnames[: (options.max_items or 5)]
+    scan_hosts = hostnames[: (options.max_items or 5)] if options.authorized else []
+    if not options.authorized:
+        module_rows.append(["Ports", "Skipped", "port scanning requires --authorized"])
     for host in scan_hosts:
         result = _stage(f"Ports: {host}", lambda h=host: ports_tool.run(h, options))
         if result and result.sections and result.sections[0].table:

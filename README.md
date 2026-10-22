@@ -87,38 +87,38 @@ and testing suite. Run `webscan tools` to list them.
 | --- | --- | --- |
 | Website Recon | `recon` | DNS records, WHOIS/RDAP, HTTP headers and server tech at a glance |
 | SSL/TLS Scanner | `ssl` | Certificate, protocol matrix (TLS 1.0-1.3), weak-cipher and expiry checks |
-| Port Scanner | `ports` | TCP connect scan with service/banner fingerprinting |
-| Network Scanner | `network` | Host discovery + port sweep across a CIDR or range |
+| Port Scanner | `ports` | TCP connect scan with service/banner fingerprinting *(needs `--authorized`)* |
+| Network Scanner | `network` | Host discovery + port sweep across a CIDR or range *(needs `--authorized`)* |
 | Subdomain Finder | `subdomains` | crt.sh certificate-transparency + DNS brute force |
-| Virtual Host Finder | `vhosts` | Name-based vhosts served by one IP, via Host-header probing |
-| URL Fuzzer | `urlfuzzer` | Brute-force hidden directories and files |
+| Virtual Host Finder | `vhosts` | Name-based vhosts served by one IP, via Host-header probing *(needs `--authorized`)* |
+| URL Fuzzer | `urlfuzzer` | Brute-force hidden directories and files *(needs `--authorized`)* |
 | Google Hacking | `dorks` | Generate ready-to-run Google dork queries |
 | Subdomain Takeover | `takeover` | Dangling CNAMEs pointing at unclaimed cloud resources |
-| API Scanner | `api` | OpenAPI/Swagger discovery and GraphQL introspection |
+| API Scanner | `api` | OpenAPI/Swagger discovery and GraphQL introspection *(needs `--authorized`)* |
 | XSS Detector | `xss` | Active reflected-XSS probing with a safe PoC *(needs `--authorized`)* |
 | SQLi Detector | `sqli` | Error/boolean/time-based SQLi detection *(needs `--authorized`)* |
 | DNS & Email Security | `dnsemail` | SPF, DKIM, DMARC, CAA, DNSSEC, MTA-STS and zone-transfer (AXFR) checks |
 | Dependency Scanner | `deps` | Known-vulnerable dependencies via OSV.dev (PyPI, npm, Go, Cargo, …) |
-| Web Misconfig Scanner | `webmisc` | CORS, clickjacking, open redirect, host-header and CRLF injection |
-| Cloud Storage Exposure | `cloud` | Public S3/GCS/Azure buckets guessed from the domain |
+| Web Misconfig Scanner | `webmisc` | CORS, clickjacking, open redirect, host-header and CRLF injection *(needs `--authorized`)* |
+| Cloud Storage Exposure | `cloud` | Public S3/GCS/Azure buckets guessed from the domain *(needs `--authorized`)* |
 | Secrets Scanner | `secrets` | Hard-coded credentials/keys/tokens in a local codebase |
 | Code Security Scan | `code` | Point it at a folder (CLI) or upload a project `.zip` (web UI): supply-chain / npm-poisoning, SAST, IaC & secrets in one report |
 | Typosquat Monitor | `typosquat` | Registered, live look-alike domains (brand protection) |
-| Attack Surface Monitor | `asm` | Inventory subdomains/ports/TLS/DNS (+ host screenshots with `--render`); schedule it for change alerts |
+| Attack Surface Monitor | `asm` | Inventory subdomains/ports/TLS/DNS (port scan needs `--authorized`; + host screenshots with `--render`); schedule it for change alerts |
 | SSTI Detector | `ssti` | Server-side template injection (7*7=49 probe) *(needs `--authorized`)* |
 | Command Injection | `cmdi` | OS command injection, output + time based *(needs `--authorized`)* |
 | LFI / Path Traversal | `lfi` | Local file inclusion / path traversal *(needs `--authorized`)* |
 | Stored XSS Detector | `storedxss` | Submit markers via forms, detect persistent XSS on re-crawl *(needs `--authorized`)* |
-| Sniper | `sniper` | Runs recon + detection tools and aggregates findings into one report |
+| Sniper | `sniper` | Runs recon + detection tools and aggregates findings into one report *(needs `--authorized`)* |
 | Nuclei (templates) | `nuclei` | Template-based scanning via the external [nuclei](https://github.com/projectdiscovery/nuclei) engine *(optional; needs `--authorized`)* |
 | Nmap (service scan) | `nmapscan` | Deep port + service/version detection via external `nmap` *(optional; needs `--authorized`)* |
 
 ```bash
 webscan run ssl example.com
-webscan run ports example.com --ports top1000
+webscan run ports example.com --ports top1000 --authorized
 webscan run subdomains example.com -f html -o subs.html
 webscan run sqli "https://example.com/item?id=1" --authorized
-webscan run sniper example.com -f pdf -o sniper.pdf
+webscan run sniper example.com -f pdf -o sniper.pdf --authorized
 webscan run deps ./my-project           # scan a codebase's dependencies
 webscan run secrets ./my-project        # find hard-coded secrets
 webscan run code ./my-project           # full code scan: supply-chain + SAST + IaC + secrets
@@ -130,8 +130,9 @@ Website scans also get a **security grade (A-F)** with a shareable SVG badge
 (`/report/<id>/badge.svg`) and a **compliance mapping** view
 (`/report/<id>/compliance`) that ties findings to OWASP Top 10, PCI-DSS and ASVS.
 
-**Active tools send requests to the target.** `xss`, `sqli`, `ssti`, `cmdi`,
-`lfi`, `storedxss`, `sniper`, `nuclei` and `nmapscan` are gated: they refuse to
+**Active tools send requests to the target.** `ports`, `network`, `vhosts`,
+`urlfuzzer`, `api`, `webmisc`, `cloud`, `xss`, `sqli`, `ssti`, `cmdi`, `lfi`,
+`storedxss`, `sniper`, `nuclei` and `nmapscan` are gated: they refuse to
 run without `--authorized` (CLI) or the authorization checkbox (web UI). The Sniper aggregator is a discovery-and-detection tool only
 — it never delivers exploit payloads, obtains shells, or reads the target
 filesystem.

@@ -66,7 +66,7 @@ def test_tool_flow_and_json(client, server):
     from urllib.parse import urlparse
     port = urlparse(server).port
     resp = client.post("/tool/ports", data={"target": "127.0.0.1", "ports": str(port),
-                                            "timeout": 3}, follow_redirects=False)
+                                            "timeout": 3, "authorized": "true"}, follow_redirects=False)
     job_id = resp.headers["location"].rsplit("/", 1)[-1]
     assert _wait(client, job_id) == "finished"
     payload = client.get(f"/job/{job_id}/report.json").json()
@@ -130,12 +130,14 @@ def test_recent_scan_is_reused(client, server, monkeypatch):
     monkeypatch.setenv("WEBSCAN_SCAN_TTL", "600")
     from urllib.parse import urlparse
     port = urlparse(server).port
-    r1 = client.post("/tool/ports", data={"target": "127.0.0.1", "ports": str(port), "timeout": 3},
+    r1 = client.post("/tool/ports", data={"target": "127.0.0.1", "ports": str(port), "timeout": 3,
+                                          "authorized": "true"},
                      follow_redirects=False)
     jid = r1.headers["location"].rsplit("/", 1)[-1]
     assert _wait(client, jid) == "finished"
     # a second identical scan should redirect to the stored result, not a new job
-    r2 = client.post("/tool/ports", data={"target": "127.0.0.1", "ports": str(port), "timeout": 3},
+    r2 = client.post("/tool/ports", data={"target": "127.0.0.1", "ports": str(port), "timeout": 3,
+                                          "authorized": "true"},
                      follow_redirects=False)
     assert r2.status_code == 303 and "/stored/" in r2.headers["location"]
     monkeypatch.setenv("WEBSCAN_SCAN_TTL", "0")
