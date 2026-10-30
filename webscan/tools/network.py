@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import concurrent.futures
 import ipaddress
+import itertools
 import socket
 
 from webscan.core.models import Confidence, Finding, Table
@@ -19,11 +20,14 @@ def _hosts(target: str, limit: int) -> list[str]:
     try:
         if "/" in target:
             net = ipaddress.ip_network(target, strict=False)
-            return [str(h) for h in list(net.hosts())[:limit]]
+            return [str(h) for h in itertools.islice(net.hosts(), limit)]
         if "-" in target and target.count(".") == 3:
             base, _, end = target.rpartition(".")
             lo, _, hi = end.partition("-")
-            return [f"{base}.{i}" for i in range(int(lo), int(hi) + 1)][:limit]
+            low, high = int(lo), int(hi)
+            if not 0 <= low <= high <= 255:
+                return []
+            return [f"{base}.{i}" for i in range(low, min(high, low + limit - 1) + 1)]
         return [str(ipaddress.ip_address(target))]
     except ValueError:
         try:

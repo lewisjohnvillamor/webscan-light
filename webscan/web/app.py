@@ -41,6 +41,9 @@ from .logger_store import LoggedRequest, LoggerStore
 from .security import SecurityHeadersMiddleware
 from .store import JobStore
 
+# Every outbound connection this server makes is scope-checked (SSRF guard).
+scope.activate_connect_guard()
+
 BASE_DIR = Path(__file__).parent
 templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
 

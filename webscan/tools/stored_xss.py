@@ -6,7 +6,7 @@ would execute). It never delivers a working exploit payload.
 """
 from __future__ import annotations
 
-from webscan.core.http import HttpClient, normalize_target
+from webscan.core.http import HttpClient, normalize_target, same_origin
 from webscan.core.models import Classification, Confidence, Finding, Severity, Table
 from webscan.core.spider import crawl
 from webscan.core.toolreport import Section, ToolReport
@@ -34,7 +34,7 @@ def run(target: str, options: ToolOptions) -> ToolReport:
                         extra_headers={"Cookie": options.cookie} if options.cookie else None)
     crawl_result = crawl(client, base, max_pages=options.max_items or 10, max_depth=2,
                          render=options.render)
-    forms = [f for f in crawl_result.forms if any(
+    forms = [f for f in crawl_result.forms if same_origin(base, f.action) and any(
         i.get("type", "") in TEXT_TYPES for i in f.inputs if i.get("name"))]
 
     submitted: list[tuple[str, str, str]] = []  # (marker, form action, field)

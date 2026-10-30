@@ -16,6 +16,7 @@ import subprocess  # nosec B404: fixed argv list, no shell
 import xml.etree.ElementTree as ET  # nosec B405: parsing our own subprocess output
 from urllib.parse import urlparse
 
+from webscan.core import scope
 from webscan.core.models import Classification, Confidence, Finding, Table
 from webscan.core.toolreport import Section, ToolReport
 
@@ -77,13 +78,27 @@ def run(target: str, options: ToolOptions) -> ToolReport:
         report.errors.append("Refusing an unsafe target that begins with '-'.")
         return report.finish("Blocked")
 
+    scan_host = host
+    if scope.connect_guard_active():
+        allowed, reason = scope.check(host)
+        if not allowed:
+            report.errors.append(f"Target is out of scope: {reason}.")
+            return report.finish("Blocked")
+        if not scope.expand_addresses(host)[0]:
+            # nmap resolves names itself; hand it the vetted address instead.
+            try:
+                scan_host = scope.vetted_addresses(host, 0)[0]
+            except OSError as exc:
+                report.errors.append(f"Target is out of scope: {exc}.")
+                return report.finish("Blocked")
+
     ports = parse_ports(options.ports)
     port_spec = ",".join(str(p) for p in ports) if len(ports) <= 1200 else "1-65535"
     budget = 600.0
 
     command = [
         binary, "-Pn", "-sV", "--version-light", "-T4", "-oX", "-",
-        "--host-timeout", "300s", "-p", port_spec, host,
+        "--host-timeout", "300s", "-p", port_spec, scan_host,
     ]
     report.params = [
         ("Host", host), ("Engine", version() or "nmap"),

@@ -13,16 +13,19 @@ import subprocess  # nosec B404: fixed argv list, no shell
 import tempfile
 from pathlib import Path
 
+from webscan.core import scope
 from webscan.report.pdf import find_chrome
 
 
 def available() -> bool:
-    return find_chrome() is not None
+    # Chromium resolves and follows redirects itself, outside the connect guard,
+    # so rendering untrusted pages is disabled whenever that guard is enforcing.
+    return find_chrome() is not None and (not scope.connect_guard_active() or scope.unguarded_engines_allowed())
 
 
 def render_html(url: str, timeout: float = 20.0, wait_ms: int = 3500) -> str | None:
     """Return the fully-rendered DOM for ``url``, or None on failure."""
-    chrome = find_chrome()
+    chrome = find_chrome() if available() else None
     if not chrome:
         return None
     with tempfile.TemporaryDirectory() as tmpdir:
@@ -47,7 +50,7 @@ def render_html(url: str, timeout: float = 20.0, wait_ms: int = 3500) -> str | N
 def screenshot(url: str, out_path: str | Path, timeout: float = 20.0,
                width: int = 1200, height: int = 800, wait_ms: int = 3000) -> Path | None:
     """Capture a PNG screenshot of ``url``; return the path or None on failure."""
-    chrome = find_chrome()
+    chrome = find_chrome() if available() else None
     if not chrome:
         return None
     out = Path(out_path)

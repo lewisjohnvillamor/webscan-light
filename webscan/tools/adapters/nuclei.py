@@ -19,6 +19,7 @@ import shutil
 import subprocess  # nosec B404: fixed argv list, no shell
 from urllib.parse import urlparse
 
+from webscan.core import scope
 from webscan.core.http import normalize_target
 from webscan.core.models import Classification, Confidence, Finding, Severity, Table
 from webscan.core.toolreport import Section, ToolReport
@@ -149,9 +150,17 @@ def run(target: str, options: ToolOptions) -> ToolReport:
             "authorization box (UI) to confirm you are permitted to test this target.")
         return report.finish("Blocked")
 
-    # Guard against a target that could be read as a flag by the Go arg parser.
-    if base.strip().startswith("-"):
-        report.errors.append("Refusing an unsafe target that begins with '-'.")
+    # nuclei reads a comma-separated -target as several targets, none of which
+    # would have passed the scope check.
+    if "," in base:
+        report.errors.append("Refusing a target that contains a comma.")
+        return report.finish("Blocked")
+
+    if scope.connect_guard_active() and not scope.unguarded_engines_allowed():
+        report.errors.append(
+            "nuclei resolves hosts and follows redirects itself, outside the SSRF guard, so it "
+            "is disabled in the web UI unless WEBSCAN_ALLOW_UNGUARDED_ENGINES=1 is set. "
+            "The CLI is unaffected.")
         return report.finish("Blocked")
 
     extra = options.extra or {}

@@ -4,7 +4,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
 
-from webscan.core.http import HttpClient
+from webscan.core.http import HttpClient, same_origin
 from webscan.core.spider import crawl
 
 
@@ -42,6 +42,9 @@ def discover(client: HttpClient, target: str, max_pages: int, max_depth: int,
                 points.append(InjectionPoint("GET", page.url, name, query))
 
     for form in result.forms:
+        # Payloads go only to the scanned origin, never to a third party the page points at.
+        if not same_origin(target, form.action):
+            continue
         params = {i.get("name", ""): (i.get("value", "") or "test")
                   for i in form.inputs if i.get("name")}
         for name in list(params):

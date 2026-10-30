@@ -66,6 +66,9 @@ def _send_email(subject: str, text: str) -> None:
 
 
 def notify(subject: str, text: str, payload: dict | None = None) -> None:
+    from webscan.core import scope
+
     payload = payload or {}
-    _send_webhook(subject, text, payload)
-    _send_email(subject, text)
+    with scope.trusted():
+        _send_webhook(subject, text, payload)
+        _send_email(subject, text)

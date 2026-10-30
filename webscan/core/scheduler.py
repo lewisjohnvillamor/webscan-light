@@ -11,7 +11,7 @@ import threading
 import uuid
 from datetime import datetime, timedelta, timezone
 
-from . import database, history, notify
+from . import database, history, notify, scope
 
 
 def _now() -> datetime:
@@ -79,6 +79,11 @@ def run_due(now: datetime | None = None) -> int:
             continue
 
         options = json.loads(sched["options"] or "{}")
+        if scope.connect_guard_active():
+            allowed, _ = scope.check(sched["target"])
+            if not allowed:
+                _reschedule(sched, now)
+                continue
         try:
             result = _run_one(sched["tool_id"], sched["target"], options)
         except Exception:  # noqa: BLE001
